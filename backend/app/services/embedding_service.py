@@ -1,9 +1,12 @@
-﻿from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
+
 from backend.app.config import settings
+
 
 def get_embeddings() -> OpenAIEmbeddings:
     if not settings.openai_api_key:
-        raise ValueError("鏈厤缃?OPENAI_API_KEY")
+        raise ValueError("OPENAI_API_KEY is not configured")
+
     return OpenAIEmbeddings(
         model=settings.openai_embedding_model,
         api_key=settings.openai_api_key,

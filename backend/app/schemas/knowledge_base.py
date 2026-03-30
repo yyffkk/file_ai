@@ -1,11 +1,14 @@
-﻿from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field
+
 
 class BuildKnowledgeBaseRequest(BaseModel):
-    file_names: list[str] | None = Field(default=None, description="瑕佹瀯寤虹煡璇嗗簱鐨勬枃浠跺悕鍒楄〃")
+    file_names: list[str] | None = Field(default=None, description="File names to build into the knowledge base")
+
 
 class AskRequest(BaseModel):
-    question: str = Field(..., description="鐢ㄦ埛闂")
-    top_k: int | None = Field(default=None, description="妫€绱㈢墖娈垫暟閲?)
+    question: str = Field(..., description="User question")
+    top_k: int | None = Field(default=None, description="Number of retrieved chunks")
+
 
 class AskResponseData(BaseModel):
     answer: str

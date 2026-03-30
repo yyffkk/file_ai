@@ -1,8 +1,10 @@
-﻿from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field
+
 
 class TenderSection(BaseModel):
     title: str
     content: str
+
 
 class TenderParseResponseData(BaseModel):
     file_name: str
