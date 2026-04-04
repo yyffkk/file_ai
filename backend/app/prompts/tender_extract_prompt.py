@@ -1,7 +1,11 @@
+"""标书字段抽取提示词模板。"""
+
 import json
 
 
 def build_tender_extract_prompt(file_name: str, full_text: str, sections: list[dict]) -> str:
+    """构造发送给 LLM 的提示词。"""
+
     sections_text = json.dumps(sections, ensure_ascii=False, indent=2)
     return f"""You are a tender document extraction assistant.
 Extract key fields from the tender document and return JSON only.
@@ -9,15 +13,15 @@ Do not return explanations or markdown code fences.
 
 Return exactly this JSON structure:
 {{
-  "file_name": "{file_name}",
-  "project_name": "",
-  "tender_company": "",
-  "deadline": "",
-  "qualification_requirements": [],
-  "technical_requirements": [],
-  "business_requirements": [],
-  "scoring_rules": [],
-  "sections": []
+  \"file_name\": \"{file_name}\",
+  \"project_name\": \"\",
+  \"tender_company\": \"\",
+  \"deadline\": \"\",
+  \"qualification_requirements\": [],
+  \"technical_requirements\": [],
+  \"business_requirements\": [],
+  \"scoring_rules\": [],
+  \"sections\": []
 }}
 
 Field rules:

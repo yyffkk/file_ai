@@ -1,3 +1,5 @@
+"""标书解析 API。"""
+
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from backend.app.config import UPLOAD_DIR
@@ -10,6 +12,8 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
 
 @router.post("/parse", response_model=ApiResponse)
 async def parse_tender(file: UploadFile = File(...)):
+    """上传标书并直接执行结构化解析。"""
+
     suffix = ""
     if file.filename and "." in file.filename:
         suffix = "." + file.filename.split(".")[-1].lower()

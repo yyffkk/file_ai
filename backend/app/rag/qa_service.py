@@ -1,3 +1,5 @@
+"""RAG 问答服务。"""
+
 from backend.app.config import settings
 from backend.app.services.llm_client import invoke_llm
 from backend.app.services.vector_store_service import search_similar_chunks
@@ -16,9 +18,11 @@ Return a concise and accurate answer.
 """
 
 
-def answer_question(question: str, top_k: int | None = None) -> dict:
+def answer_question(knowledge_base_id: str, question: str, top_k: int | None = None) -> dict:
+    """基于指定知识库回答问题。"""
+
     k = top_k or settings.top_k
-    results = search_similar_chunks(question, k)
+    results = search_similar_chunks(question, k, knowledge_base_id)
 
     if not results:
         return {

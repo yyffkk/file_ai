@@ -1,3 +1,5 @@
+"""文本切分服务。"""
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
@@ -5,6 +7,8 @@ from backend.app.config import settings
 
 
 def split_documents(raw_docs: list[dict]) -> list[Document]:
+    """把原始文档切成适合向量检索的小块。"""
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.chunk_size,
         chunk_overlap=settings.chunk_overlap,
