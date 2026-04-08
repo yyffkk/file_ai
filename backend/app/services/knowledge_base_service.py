@@ -15,7 +15,7 @@ from fastapi import HTTPException
 
 from backend.app.config import UPLOAD_DIR, VECTORSTORE_DIR
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt"}
 INVALID_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|]')
 META_FILE_NAME = "kb.meta.json"
 
