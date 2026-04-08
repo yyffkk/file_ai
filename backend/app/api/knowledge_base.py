@@ -19,6 +19,7 @@ from backend.app.loaders.document_loader import load_document_text
 from backend.app.rag.qa_service import answer_question
 from backend.app.schemas.common import ApiResponse
 from backend.app.schemas.knowledge_base import AskRequest, BuildKnowledgeBaseRequest, CreateKnowledgeBaseRequest
+from backend.app.services.document_center_service import sync_kb_build_status
 from backend.app.services.knowledge_base_service import (
     create_knowledge_base,
     ensure_kb_exists,
@@ -27,6 +28,7 @@ from backend.app.services.knowledge_base_service import (
     list_kb_files,
     list_knowledge_bases,
     migrate_legacy_knowledge_bases,
+    update_kb_build_status,
     validate_extension,
 )
 from backend.app.services.text_splitter_service import split_documents
@@ -123,35 +125,44 @@ def download_document(knowledge_base_id: str, file_name: str):
 def build_knowledge_base(request: BuildKnowledgeBaseRequest):
     """构建指定知识库的向量索引。"""
 
-    file_paths = []
+    try:
+        update_kb_build_status(request.knowledge_base_id, "构建中")
+        sync_kb_build_status(request.knowledge_base_id, "构建中")
 
-    if request.file_names:
-        for name in request.file_names:
-            safe_name = ensure_safe_filename(name)
-            path = get_kb_file_path(request.knowledge_base_id, safe_name)
-            file_paths.append(path)
-    else:
-        file_paths = [
-            get_kb_file_path(request.knowledge_base_id, item["name"])
-            for item in list_kb_files(request.knowledge_base_id)
-        ]
+        file_paths = []
 
-    if not file_paths:
-        raise HTTPException(status_code=400, detail="No files available to build the knowledge base")
+        if request.file_names:
+            for name in request.file_names:
+                safe_name = ensure_safe_filename(name)
+                path = get_kb_file_path(request.knowledge_base_id, safe_name)
+                file_paths.append(path)
+        else:
+            file_paths = [
+                get_kb_file_path(request.knowledge_base_id, item["name"])
+                for item in list_kb_files(request.knowledge_base_id)
+            ]
 
-    docs = []
-    for path in file_paths:
-        text = load_document_text(path)
-        if text.strip():
-            docs.append({"text": text, "source": path.name})
+        if not file_paths:
+            raise HTTPException(status_code=400, detail="No files available to build the knowledge base")
 
-    if not docs:
-        raise HTTPException(status_code=400, detail="All documents are empty")
+        docs = []
+        for path in file_paths:
+            text = load_document_text(path)
+            if text.strip():
+                docs.append({"text": text, "source": path.name})
 
-    split_docs = split_documents(docs)
-    result = build_and_save_vectorstore(split_docs, request.knowledge_base_id)
+        if not docs:
+            raise HTTPException(status_code=400, detail="All documents are empty")
 
-    return ApiResponse(success=True, message="Knowledge base built successfully", data=result)
+        split_docs = split_documents(docs)
+        result = build_and_save_vectorstore(split_docs, request.knowledge_base_id)
+        update_kb_build_status(request.knowledge_base_id, "已完成")
+        sync_kb_build_status(request.knowledge_base_id, "已完成")
+        return ApiResponse(success=True, message="Knowledge base built successfully", data=result)
+    except Exception:
+        update_kb_build_status(request.knowledge_base_id, "失败")
+        sync_kb_build_status(request.knowledge_base_id, "失败")
+        raise
 
 
 @router.post("/ask", response_model=ApiResponse)

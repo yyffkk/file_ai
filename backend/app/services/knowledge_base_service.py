@@ -56,6 +56,7 @@ def build_default_meta(kb_dir: Path) -> dict:
         "name": kb_dir.name,
         "created_at": datetime.fromtimestamp(kb_dir.stat().st_ctime).isoformat(),
         "migrated": True,
+        "build_status": "未构建",
     }
 
 
@@ -78,6 +79,7 @@ def read_kb_meta(kb_dir: Path) -> dict:
         "name": content.get("name", kb_dir.name),
         "created_at": content.get("created_at", default_meta["created_at"]),
         "migrated": content.get("migrated", False),
+        "build_status": content.get("build_status", "未构建"),
     }
 
 
@@ -161,6 +163,7 @@ def create_knowledge_base(name: str) -> dict:
         "name": display_name,
         "created_at": datetime.fromtimestamp(kb_dir.stat().st_ctime).isoformat(),
         "migrated": False,
+        "build_status": "未构建",
     }
     write_kb_meta(kb_dir, meta)
 
@@ -196,6 +199,7 @@ def list_knowledge_bases() -> list[dict]:
                 "file_count": len(files),
                 "created_at": meta["created_at"],
                 "migrated": meta.get("migrated", False),
+                "build_status": meta.get("build_status", "未构建"),
             }
         )
 
@@ -240,3 +244,13 @@ def get_vectorstore_path(knowledge_base_id: str) -> Path:
     """每个知识库对应独立向量索引目录。"""
 
     return VECTORSTORE_DIR / knowledge_base_id
+
+
+def update_kb_build_status(knowledge_base_id: str, build_status: str) -> dict:
+    """更新知识库构建状态。"""
+
+    kb_dir = ensure_kb_exists(knowledge_base_id)
+    meta = read_kb_meta(kb_dir)
+    meta["build_status"] = build_status
+    write_kb_meta(kb_dir, meta)
+    return meta
