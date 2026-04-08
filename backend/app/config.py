@@ -13,6 +13,7 @@ DATA_DIR = BASE_DIR / "data"
 UPLOAD_DIR = DATA_DIR / "uploads"
 DOCUMENTS_DIR = DATA_DIR / "documents"
 PARSED_DIR = DATA_DIR / "parsed"
+GENERATED_DIR = DATA_DIR / "generated"
 VECTORSTORE_DIR = DATA_DIR / "vectorstore"
 
 
@@ -43,5 +44,5 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # 应用启动时确保基础目录存在，避免上传、解析、建库时因目录缺失报错。
-for path in [DATA_DIR, UPLOAD_DIR, DOCUMENTS_DIR, PARSED_DIR, VECTORSTORE_DIR]:
+for path in [DATA_DIR, UPLOAD_DIR, DOCUMENTS_DIR, PARSED_DIR, GENERATED_DIR, VECTORSTORE_DIR]:
     path.mkdir(parents=True, exist_ok=True)

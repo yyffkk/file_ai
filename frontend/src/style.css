@@ -480,6 +480,10 @@ textarea {
   min-height: 180px;
 }
 
+.requirement-upload {
+  min-height: 150px;
+}
+
 .upload-area.tall {
   min-height: 320px;
 }
