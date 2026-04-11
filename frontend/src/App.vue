@@ -68,46 +68,45 @@
           </div>
         </section>
 
-        <section class="workspace-grid library-workspace-grid">
-          <div class="panel knowledge-list-panel full-span">
-            <div class="panel-header panel-header-stack-mobile">
+        <section class="library-main-grid">
+          <div class="panel knowledge-column-panel">
+            <div class="panel-header knowledge-column-header">
               <div>
                 <p class="panel-tag">Knowledge Bases</p>
                 <h2>我的知识库</h2>
               </div>
-              <div class="knowledge-list-header-right">
-                <span class="knowledge-count">共 {{ knowledgeBases.length }} 个</span>
-                <div class="create-form create-form-inline">
-                  <input
-                    v-model="newKbName"
-                    type="text"
-                    placeholder="输入知识库名称"
-                    @keyup.enter="createKnowledgeBase"
-                  />
-                  <button
-                    class="primary-btn"
-                    :disabled="!newKbName.trim() || loading.createKb"
-                    @click="createKnowledgeBase"
-                  >
-                    {{ loading.createKb ? '创建中...' : '新建' }}
-                  </button>
-                </div>
-              </div>
+              <span class="knowledge-count">共 {{ knowledgeBases.length }} 个</span>
             </div>
 
-            <div class="knowledge-card-grid">
+            <div class="create-form knowledge-create-form">
+              <input
+                v-model="newKbName"
+                type="text"
+                placeholder="输入知识库名称"
+                @keyup.enter="createKnowledgeBase"
+              />
+              <button
+                class="primary-btn"
+                :disabled="!newKbName.trim() || loading.createKb"
+                @click="createKnowledgeBase"
+              >
+                {{ loading.createKb ? '创建中...' : '新建' }}
+              </button>
+            </div>
+
+            <div class="knowledge-column-list">
               <button
                 v-for="item in knowledgeBases"
                 :key="item.id"
-                class="knowledge-card"
+                class="knowledge-list-item"
                 :class="{ active: selectedKnowledgeBaseId === item.id }"
                 @click="selectKnowledgeBase(item.id)"
               >
-                <div class="knowledge-card-top">
+                <div class="knowledge-list-item-top">
                   <strong>{{ item.name }}</strong>
                   <span class="kb-file-badge">{{ item.file_count || 0 }} 文件</span>
                 </div>
-                <div class="knowledge-card-bottom">
+                <div class="knowledge-list-item-bottom">
                   <small>{{ formatDate(item.created_at) }}</small>
                   <em>{{ item.build_status || '未构建' }}</em>
                 </div>
@@ -119,96 +118,98 @@
             </div>
           </div>
 
-          <div class="panel file-panel full-span">
-            <div class="panel-header panel-header-stack-mobile">
-              <div>
-                <p class="panel-tag">Files</p>
-                <h2>文件列表</h2>
+          <div class="library-content-column">
+            <div class="panel file-panel">
+              <div class="panel-header panel-header-stack-mobile">
+                <div>
+                  <p class="panel-tag">Files</p>
+                  <h2>文件列表</h2>
+                </div>
+                <button
+                  class="ghost-btn"
+                  :disabled="!selectedKnowledgeBaseId || loading.kbBuild"
+                  @click="buildKnowledgeBase"
+                >
+                  {{ loading.kbBuild ? '构建中...' : '构建知识库' }}
+                </button>
               </div>
-              <button
-                class="ghost-btn"
-                :disabled="!selectedKnowledgeBaseId || loading.kbBuild"
-                @click="buildKnowledgeBase"
-              >
-                {{ loading.kbBuild ? '构建中...' : '构建知识库' }}
-              </button>
-            </div>
 
-            <div class="upload-bar upload-bar-elevated">
-              <label class="upload-picker">
-                <input type="file" accept=".pdf,.doc,.docx,.txt" @change="onDocumentFileChange" />
-                <span>{{ documentFile?.name || '选择 PDF / Word / TXT 文件' }}</span>
-              </label>
-              <button
-                class="primary-btn"
-                :disabled="!selectedKnowledgeBaseId || !documentFile || loading.documentUpload"
-                @click="uploadLibraryDocument"
-              >
-                {{ loading.documentUpload ? '上传中...' : '上传到当前知识库' }}
-              </button>
-            </div>
-
-            <div class="table-wrap table-wrap-modern">
-              <table class="file-table">
-                <thead>
-                  <tr>
-                    <th>文件名</th>
-                    <th>类型</th>
-                    <th>大小</th>
-                    <th>更新时间</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in kbFiles" :key="item.name">
-                    <td class="name-cell">{{ item.name }}</td>
-                    <td>{{ normalizeSuffix(item.suffix) }}</td>
-                    <td>{{ formatFileSize(item.size) }}</td>
-                    <td>{{ formatDate(item.updated_at) }}</td>
-                    <td>
-                      <div class="table-actions">
-                        <button class="mini-btn" @click="previewFile(item)">预览</button>
-                        <a class="mini-btn link-like" :href="downloadUrl(item)" target="_blank" rel="noreferrer">下载</a>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="!kbFiles.length">
-                    <td colspan="5" class="empty-row">当前知识库暂无文件。</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="panel preview-panel full-span">
-            <div class="panel-header panel-header-stack-mobile">
-              <div>
-                <p class="panel-tag">Preview</p>
-                <h2>文件预览</h2>
+              <div class="upload-bar upload-bar-elevated">
+                <label class="upload-picker">
+                  <input type="file" accept=".pdf,.doc,.docx,.txt" @change="onDocumentFileChange" />
+                  <span>{{ documentFile?.name || '选择 PDF / Word / TXT 文件' }}</span>
+                </label>
+                <button
+                  class="primary-btn"
+                  :disabled="!selectedKnowledgeBaseId || !documentFile || loading.documentUpload"
+                  @click="uploadLibraryDocument"
+                >
+                  {{ loading.documentUpload ? '上传中...' : '上传到当前知识库' }}
+                </button>
               </div>
-              <div v-if="previewFileInfo" class="preview-actions">
-                <span class="preview-badge">{{ previewFileInfo.name }}</span>
-                <a class="mini-btn link-like" :href="downloadUrl(previewFileInfo)" target="_blank" rel="noreferrer">下载文件</a>
+
+              <div class="table-wrap table-wrap-modern">
+                <table class="file-table">
+                  <thead>
+                    <tr>
+                      <th>文件名</th>
+                      <th>类型</th>
+                      <th>大小</th>
+                      <th>更新时间</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in kbFiles" :key="item.name">
+                      <td class="name-cell">{{ item.name }}</td>
+                      <td>{{ normalizeSuffix(item.suffix) }}</td>
+                      <td>{{ formatFileSize(item.size) }}</td>
+                      <td>{{ formatDate(item.updated_at) }}</td>
+                      <td>
+                        <div class="table-actions">
+                          <button class="mini-btn" @click="previewFile(item)">预览</button>
+                          <a class="mini-btn link-like" :href="downloadUrl(item)" target="_blank" rel="noreferrer">下载</a>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr v-if="!kbFiles.length">
+                      <td colspan="5" class="empty-row">当前知识库暂无文件。</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <div v-if="previewLoading" class="empty-block preview-box">预览加载中...</div>
+            <div class="panel preview-panel">
+              <div class="panel-header panel-header-stack-mobile">
+                <div>
+                  <p class="panel-tag">Preview</p>
+                  <h2>文件预览</h2>
+                </div>
+                <div v-if="previewFileInfo" class="preview-actions">
+                  <span class="preview-badge">{{ previewFileInfo.name }}</span>
+                  <a class="mini-btn link-like" :href="downloadUrl(previewFileInfo)" target="_blank" rel="noreferrer">下载文件</a>
+                </div>
+              </div>
 
-            <div v-else-if="!previewFileInfo" class="empty-block preview-box preview-empty-state">
-              <div class="preview-empty-icon">📄</div>
-              <div>选中文件后，可在这里预览。PDF 直接展示，Word 转成网页预览，TXT 显示文本内容。</div>
+              <div v-if="previewLoading" class="empty-block preview-box">预览加载中...</div>
+
+              <div v-else-if="!previewFileInfo" class="empty-block preview-box preview-empty-state">
+                <div class="preview-empty-icon">📄</div>
+                <div>选中文件后，可在这里预览。PDF 直接展示，Word 转成网页预览，TXT 显示文本内容。</div>
+              </div>
+
+              <iframe
+                v-else-if="isPdfPreview"
+                class="preview-frame"
+                :src="previewContentUrl(previewFileInfo)"
+                title="pdf-preview"
+              />
+
+              <div v-else-if="isWordPreview" class="docx-preview preview-box" v-html="previewHtml"></div>
+
+              <pre v-else class="text-preview preview-box">{{ previewText }}</pre>
             </div>
-
-            <iframe
-              v-else-if="isPdfPreview"
-              class="preview-frame"
-              :src="previewContentUrl(previewFileInfo)"
-              title="pdf-preview"
-            />
-
-            <div v-else-if="isWordPreview" class="docx-preview preview-box" v-html="previewHtml"></div>
-
-            <pre v-else class="text-preview preview-box">{{ previewText }}</pre>
           </div>
         </section>
       </template>
