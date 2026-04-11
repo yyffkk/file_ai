@@ -128,8 +128,8 @@ button {
 
 .sidebar-panel-group {
   display: grid;
-  grid-template-columns: 170px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 20px;
   align-items: start;
 }
 
@@ -191,7 +191,8 @@ button {
 .nav-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
+  padding: 18px 16px;
 }
 
 .nav-item-icon {
@@ -228,6 +229,12 @@ button {
   display: block;
   margin-bottom: 6px;
   font-size: 17px;
+  line-height: 1.4;
+}
+
+.nav-item small {
+  display: block;
+  line-height: 1.75;
 }
 
 .nav-item.active,
@@ -238,12 +245,17 @@ button {
 }
 
 .kb-item {
-  min-height: 118px;
+  min-height: 148px;
+  padding: 18px;
 }
 
 .kb-item-top,
 .kb-item-bottom {
   align-items: flex-start;
+}
+
+.kb-item-top {
+  flex-wrap: wrap;
 }
 
 .kb-item-top {
@@ -265,7 +277,10 @@ button {
 .kb-item-bottom small {
   display: inline-block;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.65;
+  max-width: 120px;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .kb-item-bottom em {
@@ -273,6 +288,8 @@ button {
   color: var(--primary-deep);
   font-weight: 700;
   font-size: 13px;
+  line-height: 1.6;
+  text-align: right;
 }
 
 .create-form {
@@ -641,8 +658,13 @@ textarea:focus {
   }
 }
 
+@media (max-width: 1100px) {
+  .sidebar-panel-group {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 960px) {
-  .sidebar-panel-group,
   .summary-grid-compact,
   .upload-bar,
   .create-form,
