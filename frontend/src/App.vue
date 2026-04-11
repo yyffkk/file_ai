@@ -9,79 +9,32 @@
         </div>
       </div>
 
-      <div class="sidebar-panel-group">
-        <div class="sidebar-section nav-section">
-          <div class="section-head">
-            <h3>功能导航</h3>
-          </div>
-          <div class="nav-list">
-            <button class="nav-item" :class="{ active: currentPage === 'library' }" @click="currentPage = 'library'">
-              <span class="nav-item-icon">📚</span>
-              <div>
-                <strong>我的知识库</strong>
-                <small>管理知识库与文件</small>
-              </div>
-            </button>
-            <button class="nav-item" :class="{ active: currentPage === 'agent' }" @click="currentPage = 'agent'">
-              <span class="nav-item-icon">🤖</span>
-              <div>
-                <strong>Agent 助手</strong>
-                <small>智能生成与辅助处理</small>
-              </div>
-            </button>
-            <button class="nav-item" :class="{ active: currentPage === 'record' }" @click="currentPage = 'record'">
-              <span class="nav-item-icon">📝</span>
-              <div>
-                <strong>AI 记录</strong>
-                <small>沉淀和保存输出结果</small>
-              </div>
-            </button>
-          </div>
+      <div class="sidebar-section nav-section">
+        <div class="section-head">
+          <h3>功能导航</h3>
         </div>
-
-        <div v-if="currentPage === 'library'" class="sidebar-section kb-section">
-          <div class="section-head section-head-compact">
-            <h3>我的知识库</h3>
-            <span>{{ knowledgeBases.length }} 个</span>
-          </div>
-
-          <div class="create-form">
-            <input
-              v-model="newKbName"
-              type="text"
-              placeholder="输入知识库名称"
-              @keyup.enter="createKnowledgeBase"
-            />
-            <button
-              class="primary-btn"
-              :disabled="!newKbName.trim() || loading.createKb"
-              @click="createKnowledgeBase"
-            >
-              {{ loading.createKb ? '创建中...' : '新建' }}
-            </button>
-          </div>
-
-          <div class="kb-list">
-            <button
-              v-for="item in knowledgeBases"
-              :key="item.id"
-              class="kb-item"
-              :class="{ active: selectedKnowledgeBaseId === item.id }"
-              @click="selectKnowledgeBase(item.id)"
-            >
-              <div class="kb-item-top">
-                <strong>{{ item.name }}</strong>
-                <span class="kb-file-badge">{{ item.file_count || 0 }} 文件</span>
-              </div>
-              <div class="kb-item-bottom">
-                <small>{{ formatDate(item.created_at) }}</small>
-                <em>{{ item.build_status || '未构建' }}</em>
-              </div>
-            </button>
-            <div v-if="!knowledgeBases.length" class="empty-block">
-              还没有知识库，先在上面新建一个。
+        <div class="nav-list">
+          <button class="nav-item" :class="{ active: currentPage === 'library' }" @click="currentPage = 'library'">
+            <span class="nav-item-icon">📚</span>
+            <div>
+              <strong>我的知识库</strong>
+              <small>管理知识库与文件</small>
             </div>
-          </div>
+          </button>
+          <button class="nav-item" :class="{ active: currentPage === 'agent' }" @click="currentPage = 'agent'">
+            <span class="nav-item-icon">🤖</span>
+            <div>
+              <strong>Agent 助手</strong>
+              <small>智能生成与辅助处理</small>
+            </div>
+          </button>
+          <button class="nav-item" :class="{ active: currentPage === 'record' }" @click="currentPage = 'record'">
+            <span class="nav-item-icon">📝</span>
+            <div>
+              <strong>AI 记录</strong>
+              <small>沉淀和保存输出结果</small>
+            </div>
+          </button>
         </div>
       </div>
     </aside>
@@ -116,6 +69,56 @@
         </section>
 
         <section class="workspace-grid library-workspace-grid">
+          <div class="panel knowledge-list-panel full-span">
+            <div class="panel-header panel-header-stack-mobile">
+              <div>
+                <p class="panel-tag">Knowledge Bases</p>
+                <h2>我的知识库</h2>
+              </div>
+              <div class="knowledge-list-header-right">
+                <span class="knowledge-count">共 {{ knowledgeBases.length }} 个</span>
+                <div class="create-form create-form-inline">
+                  <input
+                    v-model="newKbName"
+                    type="text"
+                    placeholder="输入知识库名称"
+                    @keyup.enter="createKnowledgeBase"
+                  />
+                  <button
+                    class="primary-btn"
+                    :disabled="!newKbName.trim() || loading.createKb"
+                    @click="createKnowledgeBase"
+                  >
+                    {{ loading.createKb ? '创建中...' : '新建' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="knowledge-card-grid">
+              <button
+                v-for="item in knowledgeBases"
+                :key="item.id"
+                class="knowledge-card"
+                :class="{ active: selectedKnowledgeBaseId === item.id }"
+                @click="selectKnowledgeBase(item.id)"
+              >
+                <div class="knowledge-card-top">
+                  <strong>{{ item.name }}</strong>
+                  <span class="kb-file-badge">{{ item.file_count || 0 }} 文件</span>
+                </div>
+                <div class="knowledge-card-bottom">
+                  <small>{{ formatDate(item.created_at) }}</small>
+                  <em>{{ item.build_status || '未构建' }}</em>
+                </div>
+              </button>
+
+              <div v-if="!knowledgeBases.length" class="empty-block knowledge-empty-block">
+                还没有知识库，先在上面新建一个。
+              </div>
+            </div>
+          </div>
+
           <div class="panel file-panel full-span">
             <div class="panel-header panel-header-stack-mobile">
               <div>
