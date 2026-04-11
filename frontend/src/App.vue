@@ -16,28 +16,31 @@
           </div>
           <div class="nav-list">
             <button class="nav-item" :class="{ active: currentPage === 'library' }" @click="currentPage = 'library'">
+              <span class="nav-item-icon">📚</span>
               <div>
                 <strong>我的知识库</strong>
-                <small>管理知识库与知识库文件</small>
+                <small>管理知识库与文件</small>
               </div>
             </button>
             <button class="nav-item" :class="{ active: currentPage === 'agent' }" @click="currentPage = 'agent'">
+              <span class="nav-item-icon">🤖</span>
               <div>
                 <strong>Agent 助手</strong>
-                <small>原 AI 自动写标书，后续可接 Agent 工作流</small>
+                <small>智能生成与辅助处理</small>
               </div>
             </button>
             <button class="nav-item" :class="{ active: currentPage === 'record' }" @click="currentPage = 'record'">
+              <span class="nav-item-icon">📝</span>
               <div>
                 <strong>AI 记录</strong>
-                <small>沉淀和保存 Agent 助手输出结果</small>
+                <small>沉淀和保存输出结果</small>
               </div>
             </button>
           </div>
         </div>
 
         <div v-if="currentPage === 'library'" class="sidebar-section kb-section">
-          <div class="section-head">
+          <div class="section-head section-head-compact">
             <h3>我的知识库</h3>
             <span>{{ knowledgeBases.length }} 个</span>
           </div>
@@ -66,12 +69,12 @@
               :class="{ active: selectedKnowledgeBaseId === item.id }"
               @click="selectKnowledgeBase(item.id)"
             >
-              <div class="kb-item-main">
+              <div class="kb-item-top">
                 <strong>{{ item.name }}</strong>
-                <small>{{ formatDate(item.created_at) }}</small>
+                <span class="kb-file-badge">{{ item.file_count || 0 }} 文件</span>
               </div>
-              <div class="kb-item-meta">
-                <span>{{ item.file_count || 0 }} 文件</span>
+              <div class="kb-item-bottom">
+                <small>{{ formatDate(item.created_at) }}</small>
                 <em>{{ item.build_status || '未构建' }}</em>
               </div>
             </button>
@@ -85,30 +88,36 @@
 
     <main class="main-content">
       <template v-if="currentPage === 'library'">
-        <header class="topbar">
+        <header class="hero-panel">
           <div>
-            <p class="eyebrow">Knowledge Base Center</p>
+            <p class="eyebrow">Knowledge Base Workspace</p>
             <h1>{{ selectedKbName || '我的知识库' }}</h1>
             <p class="top-desc">
-              当前页面只保留知识库文件管理和构建状态展示，不再展示无用的问答和统计区块。
+              聚焦知识库管理、文件沉淀与 RAG 构建状态，界面只保留真正高频的操作。
             </p>
+          </div>
+          <div class="hero-side">
+            <div class="hero-side-label">当前构建状态</div>
+            <div class="hero-side-value">{{ selectedKbBuildStatus }}</div>
           </div>
         </header>
 
         <section class="summary-grid summary-grid-compact">
-          <div class="summary-card">
+          <div class="summary-card summary-card-accent">
             <span>当前知识库</span>
             <strong>{{ selectedKbName || '未选择' }}</strong>
+            <p>当前工作聚焦的知识库空间</p>
           </div>
           <div class="summary-card">
             <span>构建状态</span>
             <strong>{{ selectedKbBuildStatus }}</strong>
+            <p>用于表示当前 RAG 知识库构建进度</p>
           </div>
         </section>
 
         <section class="workspace-grid library-workspace-grid">
-          <div class="panel full-span">
-            <div class="panel-header">
+          <div class="panel file-panel full-span">
+            <div class="panel-header panel-header-stack-mobile">
               <div>
                 <p class="panel-tag">Files</p>
                 <h2>文件列表</h2>
@@ -122,7 +131,7 @@
               </button>
             </div>
 
-            <div class="upload-bar">
+            <div class="upload-bar upload-bar-elevated">
               <label class="upload-picker">
                 <input type="file" accept=".pdf,.doc,.docx,.txt" @change="onDocumentFileChange" />
                 <span>{{ documentFile?.name || '选择 PDF / Word / TXT 文件' }}</span>
@@ -136,7 +145,7 @@
               </button>
             </div>
 
-            <div class="table-wrap">
+            <div class="table-wrap table-wrap-modern">
               <table class="file-table">
                 <thead>
                   <tr>
@@ -169,7 +178,7 @@
           </div>
 
           <div class="panel preview-panel full-span">
-            <div class="panel-header">
+            <div class="panel-header panel-header-stack-mobile">
               <div>
                 <p class="panel-tag">Preview</p>
                 <h2>文件预览</h2>
@@ -182,8 +191,9 @@
 
             <div v-if="previewLoading" class="empty-block preview-box">预览加载中...</div>
 
-            <div v-else-if="!previewFileInfo" class="empty-block preview-box">
-              选中文件后，可在这里预览。PDF 直接展示，Word 转成网页预览，TXT 显示文本内容。
+            <div v-else-if="!previewFileInfo" class="empty-block preview-box preview-empty-state">
+              <div class="preview-empty-icon">📄</div>
+              <div>选中文件后，可在这里预览。PDF 直接展示，Word 转成网页预览，TXT 显示文本内容。</div>
             </div>
 
             <iframe
@@ -201,13 +211,17 @@
       </template>
 
       <template v-else-if="currentPage === 'agent'">
-        <header class="topbar writer-topbar">
+        <header class="hero-panel">
           <div>
             <p class="eyebrow">Agent Assistant</p>
             <h1>Agent 助手</h1>
             <p class="top-desc">
-              这里承接原“AI 自动写标书”能力，后续可以继续接入 Agent 工作流、LangGraph 和自动生成流程。
+              承接原“AI 自动写标书”能力，后续可继续接入 Agent 工作流、LangGraph 和自动生成流程。
             </p>
+          </div>
+          <div class="hero-side hero-side-muted">
+            <div class="hero-side-label">当前状态</div>
+            <div class="hero-side-value">前端占位中</div>
           </div>
         </header>
 
@@ -248,13 +262,17 @@
       </template>
 
       <template v-else>
-        <header class="topbar writer-topbar">
+        <header class="hero-panel">
           <div>
             <p class="eyebrow">AI Record</p>
             <h1>AI 记录</h1>
             <p class="top-desc">
-              用于记录和沉淀 Agent 助手输出过的内容。用户如果需要保存答案、做二次整理或留档，后续可以统一放在这里。
+              用于记录和沉淀 Agent 助手输出过的内容，后续可扩展保存、分类、检索与导出能力。
             </p>
+          </div>
+          <div class="hero-side hero-side-muted">
+            <div class="hero-side-label">记录状态</div>
+            <div class="hero-side-value">待接存储能力</div>
           </div>
         </header>
 
