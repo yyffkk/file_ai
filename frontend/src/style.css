@@ -43,7 +43,7 @@ button {
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: 380px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -53,6 +53,13 @@ button {
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+.sidebar-panel-group {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
 }
 
 .brand-card,
@@ -96,7 +103,6 @@ button {
 .kb-item-meta span,
 .kb-item-meta em,
 .summary-card span,
-.muted-text,
 .file-table th,
 .nav-item small,
 .writer-note {
@@ -118,9 +124,7 @@ button {
 .panel-header,
 .topbar,
 .preview-actions,
-.qa-actions,
-.table-actions,
-.kb-item {
+.table-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -142,11 +146,6 @@ button {
 .record-guide-list {
   display: grid;
   gap: 12px;
-}
-
-.kb-section {
-  flex: 1;
-  min-height: 0;
 }
 
 .nav-item,
@@ -179,15 +178,36 @@ button {
   background: #eff4ff;
 }
 
+.kb-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kb-item-main {
+  min-width: 0;
+}
+
+.kb-item-meta {
+  display: grid;
+  gap: 4px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.kb-item-meta em {
+  font-style: normal;
+}
+
 .create-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 92px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 116px;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
 input[type='text'],
-input[type='number'],
 textarea {
   width: 100%;
   padding: 14px 16px;
@@ -242,19 +262,8 @@ textarea:focus {
   cursor: not-allowed;
 }
 
-.kb-item-meta {
-  display: grid;
-  gap: 2px;
-  text-align: right;
-}
-
-.kb-item-meta em {
-  font-style: normal;
-}
-
 .empty-block,
 .empty-row,
-.result-content,
 .text-preview,
 .writer-output-box {
   color: #475569;
@@ -296,16 +305,14 @@ textarea:focus {
   font-size: 16px;
 }
 
-.topbar-actions {
-  display: flex;
-  gap: 10px;
-}
-
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 18px;
+}
+
+.summary-grid-compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .summary-card {
@@ -320,8 +327,11 @@ textarea:focus {
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 18px;
+}
+
+.library-workspace-grid {
+  grid-template-columns: 1fr;
 }
 
 .panel {
@@ -387,8 +397,7 @@ textarea:focus {
   min-height: 640px;
 }
 
-.preview-badge,
-.source-tag {
+.preview-badge {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
@@ -413,9 +422,8 @@ textarea:focus {
 
 .docx-preview,
 .text-preview,
-.answer-card,
-.source-card,
-.writer-output-box {
+.writer-output-box,
+.record-guide-item {
   border: 1px solid #e2e8f0;
   border-radius: 18px;
   background: #f8fafc;
@@ -431,43 +439,6 @@ textarea:focus {
 
 .docx-preview p {
   margin: 0 0 12px;
-}
-
-.qa-form {
-  display: grid;
-  gap: 12px;
-}
-
-.qa-actions {
-  justify-content: flex-start;
-}
-
-.qa-actions input[type='number'] {
-  width: 120px;
-}
-
-.qa-result {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
-  gap: 16px;
-  margin-top: 18px;
-}
-
-.result-title {
-  font-weight: 800;
-  margin-bottom: 12px;
-}
-
-.result-content {
-  min-height: 120px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.source-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
 }
 
 .writer-layout,
@@ -495,13 +466,6 @@ textarea:focus {
   line-height: 1.8;
 }
 
-.record-guide-item {
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  background: #f8fafc;
-  padding: 18px;
-}
-
 .record-guide-item strong {
   display: block;
   margin-bottom: 8px;
@@ -517,19 +481,25 @@ textarea:focus {
   font-size: 13px;
 }
 
-@media (max-width: 1200px) {
-  .app-shell,
-  .workspace-grid,
-  .summary-grid,
-  .qa-result,
-  .upload-bar,
-  .create-form,
-  .writer-layout {
+@media (max-width: 1280px) {
+  .app-shell {
     grid-template-columns: 1fr;
   }
 
-  .app-shell {
-    display: block;
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+}
+
+@media (max-width: 960px) {
+  .sidebar-panel-group,
+  .summary-grid-compact,
+  .upload-bar,
+  .create-form,
+  .writer-layout,
+  .record-layout {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -548,10 +518,8 @@ textarea:focus {
     font-size: 30px;
   }
 
-  .topbar-actions,
   .preview-actions,
-  .table-actions,
-  .qa-actions {
+  .table-actions {
     flex-wrap: wrap;
   }
 }
