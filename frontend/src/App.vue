@@ -5,7 +5,7 @@
         <div class="brand-logo">KB</div>
         <div>
           <div class="brand-title">文件智能助手</div>
-          <div class="brand-subtitle">资料库 + AI 自动写标书</div>
+          <div class="brand-subtitle">知识库管理 + Agent 助手 + AI 记录</div>
         </div>
       </div>
 
@@ -14,22 +14,22 @@
           <h3>功能导航</h3>
         </div>
         <div class="nav-list">
-          <button class="nav-item" :class="{ active: currentPage === 'library' }" @click="currentPage = 'library'">
+          <button class="nav-item" :class="{ active: currentPage === 'agent' }" @click="currentPage = 'agent'">
             <div>
-              <strong>资料库</strong>
-              <small>管理知识库、文件预览、下载、问答</small>
+              <strong>Agent 助手</strong>
+              <small>原 AI 自动写标书，后续可接 LangGraph 与完整流程</small>
             </div>
           </button>
-          <button class="nav-item" :class="{ active: currentPage === 'writer' }" @click="currentPage = 'writer'">
+          <button class="nav-item" :class="{ active: currentPage === 'record' }" @click="currentPage = 'record'">
             <div>
-              <strong>AI 自动写标书</strong>
-              <small>先保留前端界面，后续再接 LangGraph</small>
+              <strong>AI 记录</strong>
+              <small>记录 Agent 助手输出结果，方便沉淀、归档和回看</small>
             </div>
           </button>
         </div>
       </div>
 
-      <div v-if="currentPage === 'library'" class="sidebar-section">
+      <div class="sidebar-section kb-section">
         <div class="section-head">
           <h3>我的知识库</h3>
           <span>{{ knowledgeBases.length }} 个</span>
@@ -76,13 +76,112 @@
     </aside>
 
     <main class="main-content">
-      <template v-if="currentPage === 'library'">
+      <template v-if="currentPage === 'agent'">
+        <header class="topbar writer-topbar">
+          <div>
+            <p class="eyebrow">Agent Assistant</p>
+            <h1>Agent 助手</h1>
+            <p class="top-desc">
+              这里承接原“AI 自动写标书”能力，后续可以继续接入 Agent 工作流、LangGraph 和自动生成流程。
+            </p>
+          </div>
+        </header>
+
+        <section class="writer-layout">
+          <div class="panel writer-input-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-tag">Input</p>
+                <h2>用户需求</h2>
+              </div>
+            </div>
+            <textarea
+              v-model="writerRequirement"
+              class="writer-requirement"
+              placeholder="请在这里输入用户需求，例如：
+1. 项目背景
+2. 招标要求
+3. 需要重点体现的能力
+4. 交付周期
+5. 商务条款等"
+            />
+            <div class="writer-note">当前仅保留界面，不调用后端生成。</div>
+          </div>
+
+          <div class="panel writer-output-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-tag">Output</p>
+                <h2>助手输出</h2>
+              </div>
+              <button class="ghost-btn" disabled>后续接 Agent 工作流</button>
+            </div>
+            <div class="writer-output-box">
+              {{ writerOutput || '这里是 Agent 助手的大输出框，后续接入生成能力后，会在这里展示完整结果。' }}
+            </div>
+          </div>
+        </section>
+      </template>
+
+      <template v-else-if="currentPage === 'record'">
+        <header class="topbar writer-topbar">
+          <div>
+            <p class="eyebrow">AI Record</p>
+            <h1>AI 记录</h1>
+            <p class="top-desc">
+              用于记录和沉淀 Agent 助手输出过的内容。用户如果需要保存答案、做二次整理或留档，后续可以统一放在这里。
+            </p>
+          </div>
+        </header>
+
+        <section class="record-layout">
+          <div class="panel record-editor-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-tag">Record Input</p>
+                <h2>记录内容</h2>
+              </div>
+            </div>
+            <textarea
+              v-model="recordContent"
+              class="record-textarea"
+              placeholder="可将 Agent 助手的输出结果、整理后的重点、备注说明等记录在这里。"
+            />
+            <div class="writer-note">当前先保留前端占位，后续可接入保存、分类、检索能力。</div>
+          </div>
+
+          <div class="panel record-guide-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-tag">Record Plan</p>
+                <h2>使用场景</h2>
+              </div>
+            </div>
+            <div class="record-guide-list">
+              <div class="record-guide-item">
+                <strong>记录助手答案</strong>
+                <p>把 Agent 助手生成的标书段落、答复建议、分析结果保存下来。</p>
+              </div>
+              <div class="record-guide-item">
+                <strong>沉淀二次编辑稿</strong>
+                <p>允许用户在原始 AI 输出基础上做人工修订，形成最终版本记录。</p>
+              </div>
+              <div class="record-guide-item">
+                <strong>后续可扩展</strong>
+                <p>可继续增加分类、标签、搜索、关联知识库、导出等能力。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </template>
+
+      <template v-else>
         <header class="topbar">
           <div>
             <p class="eyebrow">Knowledge Base Center</p>
             <h1>{{ selectedKbName || '资料库' }}</h1>
             <p class="top-desc">
-              左边选择知识库，右边查看文件、预览/下载，并对当前知识库内容发起问答。
+              左边独立管理知识库，右边查看文件、预览/下载，并对当前知识库内容发起问答。
             </p>
           </div>
           <div class="topbar-actions">
@@ -241,48 +340,6 @@
           </div>
         </section>
       </template>
-
-      <template v-else>
-        <header class="topbar writer-topbar">
-          <div>
-            <p class="eyebrow">AI Tender Writer</p>
-            <h1>AI 自动写标书</h1>
-            <p class="top-desc">
-              这个页面目前只做前端界面占位。后端逻辑先不接，后续可以再用 LangGraph 接入完整流程。
-            </p>
-          </div>
-        </header>
-
-        <section class="writer-layout">
-          <div class="panel writer-input-panel">
-            <div class="panel-header">
-              <div>
-                <p class="panel-tag">Input</p>
-                <h2>用户需求</h2>
-              </div>
-            </div>
-            <textarea
-              v-model="writerRequirement"
-              class="writer-requirement"
-              placeholder="请在这里输入用户需求，例如：\n1. 项目背景\n2. 招标要求\n3. 需要重点体现的能力\n4. 交付周期\n5. 商务条款等"
-            />
-            <div class="writer-note">当前仅保留界面，不调用后端生成。</div>
-          </div>
-
-          <div class="panel writer-output-panel">
-            <div class="panel-header">
-              <div>
-                <p class="panel-tag">Output</p>
-                <h2>标书输出</h2>
-              </div>
-              <button class="ghost-btn" disabled>后续接 LangGraph</button>
-            </div>
-            <div class="writer-output-box">
-              {{ writerOutput || '这里是大输出框，后续接入 AI 自动生成标书内容后，会在这里展示完整结果。' }}
-            </div>
-          </div>
-        </section>
-      </template>
     </main>
   </div>
 </template>
@@ -307,6 +364,7 @@ const topK = ref(4)
 const qaAnswer = ref({ answer: '', sources: [], chunks: [], score: [] })
 const writerRequirement = ref('')
 const writerOutput = ref('')
+const recordContent = ref('')
 
 const loading = ref({
   createKb: false,
@@ -371,6 +429,7 @@ async function fetchKbFiles(knowledgeBaseId = selectedKnowledgeBaseId.value) {
 
 async function selectKnowledgeBase(id) {
   selectedKnowledgeBaseId.value = id
+  currentPage.value = 'library'
   previewFileInfo.value = null
   previewHtml.value = ''
   previewText.value = ''

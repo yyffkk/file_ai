@@ -138,9 +138,15 @@ button {
 }
 
 .nav-list,
-.kb-list {
+.kb-list,
+.record-guide-list {
   display: grid;
   gap: 12px;
+}
+
+.kb-section {
+  flex: 1;
+  min-height: 0;
 }
 
 .nav-item,
@@ -464,17 +470,20 @@ textarea:focus {
   gap: 10px;
 }
 
-.writer-layout {
+.writer-layout,
+.record-layout {
   display: grid;
   grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.5fr);
   gap: 18px;
 }
 
-.writer-requirement {
+.writer-requirement,
+.record-textarea {
   min-height: 420px;
 }
 
-.writer-output-panel {
+.writer-output-panel,
+.record-guide-panel {
   min-height: 560px;
 }
 
@@ -484,6 +493,23 @@ textarea:focus {
   word-break: break-word;
   font-size: 15px;
   line-height: 1.8;
+}
+
+.record-guide-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #f8fafc;
+  padding: 18px;
+}
+
+.record-guide-item strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.record-guide-item p {
+  margin: 0;
+  color: #475569;
 }
 
 .writer-note {
