@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     qdrant_api_key: str = ""
     qdrant_path: Path = QDRANT_DIR
     embedding_model_name: str = "BAAI/bge-small-zh-v1.5"
+    sql_summary_use_llm: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",

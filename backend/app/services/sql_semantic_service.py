@@ -5,6 +5,9 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from backend.app.config import settings
+from backend.app.services.llm_client import invoke_llm
+
 
 @dataclass
 class SQLChunk:
@@ -50,6 +53,30 @@ STATEMENT_START_PATTERNS = [
     ("query", re.compile(r"^\s*select\b", re.I)),
     ("header", re.compile(r"^\s*(create\b|alter\b|as\b|declare\b|set\b|begin\b|@\w+)", re.I)),
 ]
+
+SUMMARY_PROMPT_TEMPLATE = """你是 SQL 业务语义摘要器。
+请基于给定 SQL 代码块，生成一个自然语言 summary，用于后续数据库语义检索。
+
+必须遵守：
+1. 必须明确说明这是哪种对象（存储过程/视图/触发器/表）以及对象名。
+2. 必须说明当前区段类型（header/query/branch_logic/write_logic/return_logic）。
+3. 必须描述这段 SQL 在业务上具体做了什么，不能空泛，不能只说“包含查询逻辑”。
+4. 尽量说清楚根据什么条件判断什么业务结果，或者对哪些数据做了什么处理。
+5. 必须提及涉及表、操作类型、参数、是否包含条件判断、是否涉及返回结果。
+6. 输出只要一段自然语言，不要 JSON，不要分点。
+
+输入信息：
+对象类型: {object_type}
+对象名称: {object_name}
+区段类型: {section}
+涉及表: {table_refs}
+操作类型: {action_types}
+参数: {params}
+是否包含条件判断: {has_condition}
+是否涉及返回结果: {has_return}
+原始代码:
+{raw_sql_chunk}
+"""
 
 
 def normalize_object_name(name: str) -> str:
@@ -221,31 +248,6 @@ def extract_action_types(raw_sql_chunk: str) -> list[str]:
     return [name for name, pattern in ACTION_PATTERNS.items() if pattern.search(raw_sql_chunk)]
 
 
-def extract_conditions(raw_sql_chunk: str) -> list[str]:
-    conditions = []
-    for pattern in [r"\bif\b(.+?)(?:\bbegin\b|\bthen\b|$)", r"\bwhere\b(.+?)(?:\bgroup\b|\border\b|;|$)", r"\bexists\s*\((.+?)\)"]:
-        for match in re.finditer(pattern, raw_sql_chunk, re.I | re.S):
-            text = re.sub(r"\s+", " ", match.group(1)).strip(" ()\n\t")
-            if text:
-                conditions.append(text[:160])
-    return conditions[:3]
-
-
-def extract_business_targets(raw_sql_chunk: str, params: list[str]) -> list[str]:
-    targets = []
-    for pattern in [r"set\s+(@\w+)\s*=", r"into\s+([\[\]\w\.]+)", r"update\s+([\[\]\w\.]+)"]:
-        for match in re.finditer(pattern, raw_sql_chunk, re.I):
-            target = match.group(1).strip().strip("[]")
-            if target:
-                targets.append(target)
-    targets.extend(params[:2])
-    deduped = []
-    for item in targets:
-        if item not in deduped:
-            deduped.append(item)
-    return deduped[:4]
-
-
 def has_condition(raw_sql_chunk: str) -> bool:
     return bool(re.search(r"\bif\b|\belse\b|\bcase\b|\bwhen\b|\bexists\b|\bwhere\b", raw_sql_chunk, re.I))
 
@@ -254,15 +256,24 @@ def has_return(raw_sql_chunk: str) -> bool:
     return bool(re.search(r"\breturn\b|\boutput\b|\bselect\s+@|\bset\s+@", raw_sql_chunk, re.I))
 
 
-def describe_section(section: str) -> str:
-    mapping = {
-        "header": "参数定义、变量声明、初始化配置或过程入口说明",
-        "query": "执行数据查询、关联分析或结果汇总",
-        "branch_logic": "进行条件判断、分支控制或业务路径选择",
-        "write_logic": "执行数据写入、更新、删除或合并",
-        "return_logic": "设置输出参数、返回状态或返回结果",
-    }
-    return mapping.get(section, "执行数据库逻辑")
+def build_rule_based_summary(
+    object_type: str,
+    object_name: str,
+    section: str,
+    table_refs: list[str],
+    action_types: list[str],
+    params: list[str],
+    raw_sql_chunk: str,
+) -> str:
+    tables_text = "、".join(table_refs) if table_refs else "未识别到具体表"
+    actions_text = "、".join(action_types) if action_types else "无明确数据操作"
+    params_text = f"参数包括 {'、'.join(params)}" if params else "未识别到参数"
+    condition_text = "包含条件判断" if has_condition(raw_sql_chunk) else "不包含明显条件判断"
+    return_text = "涉及返回结果" if has_return(raw_sql_chunk) else "未直接体现返回结果"
+    return (
+        f"该代码块属于{object_type} {object_name}，当前区段为{section}。"
+        f"该区段围绕 {tables_text} 执行业务逻辑，包含 {actions_text} 操作，{params_text}，{condition_text}，{return_text}。"
+    )
 
 
 def build_summary(
@@ -274,23 +285,34 @@ def build_summary(
     action_types: list[str],
     params: list[str],
 ) -> str:
-    condition_text = "；条件包括：" + "；".join(extract_conditions(raw_sql_chunk)) if has_condition(raw_sql_chunk) and extract_conditions(raw_sql_chunk) else "；未识别到明确条件表达式"
-    return_text = "；该区段涉及返回结果或输出参数" if has_return(raw_sql_chunk) else "；该区段未直接输出返回结果"
-    tables_text = "、".join(table_refs) if table_refs else "未识别到具体表"
-    actions_text = "、".join(action_types) if action_types else "无明确数据操作"
-    params_text = f"参数包括 {'、'.join(params)}" if params else "未识别到参数"
-    targets = extract_business_targets(raw_sql_chunk, params)
-    target_text = f"，核心影响对象为 {'、'.join(targets)}" if targets else ""
+    prompt = SUMMARY_PROMPT_TEMPLATE.format(
+        object_type=object_type,
+        object_name=object_name,
+        section=section,
+        table_refs=", ".join(table_refs) if table_refs else "无",
+        action_types=", ".join(action_types) if action_types else "无",
+        params=", ".join(params) if params else "无",
+        has_condition="是" if has_condition(raw_sql_chunk) else "否",
+        has_return="是" if has_return(raw_sql_chunk) else "否",
+        raw_sql_chunk=raw_sql_chunk,
+    )
 
-    return (
-        f"该代码块属于{object_type} {object_name}，"
-        f"当前区段为{section}。"
-        f"该区段主要用于{describe_section(section)}，"
-        f"围绕 {tables_text} 处理业务逻辑，"
-        f"执行 {actions_text} 操作，"
-        f"{params_text}{target_text}"
-        f"{condition_text}"
-        f"{return_text}。"
+    if settings.sql_summary_use_llm:
+        try:
+            summary = invoke_llm(prompt).strip()
+            if summary:
+                return re.sub(r"\s+", " ", summary)
+        except Exception:
+            pass
+
+    return build_rule_based_summary(
+        object_type=object_type,
+        object_name=object_name,
+        section=section,
+        table_refs=table_refs,
+        action_types=action_types,
+        params=params,
+        raw_sql_chunk=raw_sql_chunk,
     )
 
 
