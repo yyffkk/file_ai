@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
-from backend.app.config import settings
+from backend.app.config import GENERATED_DIR, settings
 from backend.app.services.llm_client import invoke_llm
 
 
@@ -77,6 +80,45 @@ SUMMARY_PROMPT_TEMPLATE = """你是 SQL 业务语义摘要器。
 原始代码:
 {raw_sql_chunk}
 """
+
+SUMMARY_CACHE_FILE = GENERATED_DIR / "sql_summary_cache.json"
+
+
+def load_summary_cache() -> dict:
+    if not SUMMARY_CACHE_FILE.exists():
+        return {}
+    try:
+        return json.loads(SUMMARY_CACHE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def save_summary_cache(cache: dict) -> None:
+    SUMMARY_CACHE_FILE.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def build_summary_cache_key(
+    object_type: str,
+    object_name: str,
+    section: str,
+    raw_sql_chunk: str,
+    table_refs: list[str],
+    action_types: list[str],
+    params: list[str],
+) -> str:
+    payload = {
+        "object_type": object_type,
+        "object_name": object_name,
+        "section": section,
+        "raw_sql_chunk": raw_sql_chunk,
+        "table_refs": table_refs,
+        "action_types": action_types,
+        "params": params,
+        "model": settings.openai_chat_model,
+        "base_url": settings.openai_base_url,
+    }
+    serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
 def normalize_object_name(name: str) -> str:
@@ -285,6 +327,20 @@ def build_summary(
     action_types: list[str],
     params: list[str],
 ) -> str:
+    cache_key = build_summary_cache_key(
+        object_type=object_type,
+        object_name=object_name,
+        section=section,
+        raw_sql_chunk=raw_sql_chunk,
+        table_refs=table_refs,
+        action_types=action_types,
+        params=params,
+    )
+    cache = load_summary_cache()
+    cached_summary = cache.get(cache_key)
+    if cached_summary:
+        return cached_summary
+
     prompt = SUMMARY_PROMPT_TEMPLATE.format(
         object_type=object_type,
         object_name=object_name,
@@ -297,23 +353,29 @@ def build_summary(
         raw_sql_chunk=raw_sql_chunk,
     )
 
+    summary = ""
     if settings.sql_summary_use_llm:
         try:
             summary = invoke_llm(prompt).strip()
             if summary:
-                return re.sub(r"\s+", " ", summary)
+                summary = re.sub(r"\s+", " ", summary)
         except Exception:
-            pass
+            summary = ""
 
-    return build_rule_based_summary(
-        object_type=object_type,
-        object_name=object_name,
-        section=section,
-        table_refs=table_refs,
-        action_types=action_types,
-        params=params,
-        raw_sql_chunk=raw_sql_chunk,
-    )
+    if not summary:
+        summary = build_rule_based_summary(
+            object_type=object_type,
+            object_name=object_name,
+            section=section,
+            table_refs=table_refs,
+            action_types=action_types,
+            params=params,
+            raw_sql_chunk=raw_sql_chunk,
+        )
+
+    cache[cache_key] = summary
+    save_summary_cache(cache)
+    return summary
 
 
 def build_retrieval_text(
