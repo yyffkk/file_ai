@@ -52,8 +52,8 @@
           </div>
         </header>
 
-        <section class="library-main-grid">
-          <div class="panel knowledge-column-panel">
+        <section class="library-main-grid layout-kb-dominant">
+          <div class="panel knowledge-column-panel knowledge-column-panel-dominant">
             <div class="panel-header knowledge-column-header">
               <div>
                 <p class="panel-tag">Knowledge Bases</p>
@@ -78,17 +78,16 @@
               </button>
             </div>
 
-            <div class="knowledge-column-list">
+            <div class="knowledge-column-list knowledge-column-list-dominant">
               <button
                 v-for="item in knowledgeBases"
                 :key="item.id"
-                class="knowledge-list-item"
+                class="knowledge-list-item knowledge-list-item-dominant"
                 :class="{ active: selectedKnowledgeBaseId === item.id }"
                 @click="selectKnowledgeBase(item.id)"
               >
                 <div class="knowledge-list-item-top">
                   <strong>{{ item.name }}</strong>
-                  <span class="kb-file-badge">{{ item.file_count || 0 }} 文件</span>
                 </div>
                 <div class="knowledge-list-item-bottom">
                   <small>{{ formatDate(item.created_at) }}</small>
@@ -701,9 +700,13 @@ function getErrorMessage(error) {
 
 .library-main-grid {
   display: grid;
-  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+  grid-template-columns: minmax(420px, 520px) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
+}
+
+.layout-kb-dominant {
+  grid-template-columns: minmax(460px, 560px) minmax(0, 1fr);
 }
 
 .library-content-column {
@@ -801,10 +804,18 @@ function getErrorMessage(error) {
   cursor: not-allowed;
 }
 
+.knowledge-column-panel-dominant {
+  min-height: calc(100vh - 180px);
+}
+
 .knowledge-column-list {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.knowledge-column-list-dominant {
+  gap: 12px;
 }
 
 .knowledge-list-item {
@@ -816,6 +827,11 @@ function getErrorMessage(error) {
   text-align: left;
   cursor: pointer;
   color: #1b2b4b;
+}
+
+.knowledge-list-item-dominant {
+  padding: 16px 18px;
+  background: #f7faff;
 }
 
 .knowledge-list-item.active {
