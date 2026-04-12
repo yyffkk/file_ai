@@ -9,7 +9,7 @@ from qdrant_client.http.models import Distance, PointStruct, VectorParams
 
 from backend.app.config import settings
 from backend.app.services.embedding_service import embed_query, embed_texts, get_embedding_model
-from backend.app.services.sql_semantic_service import parse_sql_chunks
+from backend.app.services.sql_semantic_service import extract_sql_segments, parse_sql_chunks
 
 _client: QdrantClient | None = None
 
@@ -53,20 +53,24 @@ def rebuild_sql_vectorstore(sql_texts: list[dict], knowledge_base_id: str):
     all_chunks = []
     for item in sql_texts:
         file_name = item["source"]
-        chunks = parse_sql_chunks(item["text"])
-        for chunk in chunks:
-            all_chunks.append({
-                "source": file_name,
-                "object_type": chunk.object_type,
-                "object_name": chunk.object_name,
-                "section": chunk.section,
-                "summary": chunk.summary,
-                "raw_text": chunk.raw_text,
-                "retrieval_text": chunk.retrieval_text,
-                "table_refs": chunk.table_refs,
-                "action_types": chunk.action_types,
-                "params": chunk.params,
-            })
+        segments = extract_sql_segments(item["text"])
+        for segment_index, segment in enumerate(segments):
+            chunks = parse_sql_chunks(segment)
+            for chunk_index, chunk in enumerate(chunks):
+                all_chunks.append({
+                    "source": file_name,
+                    "segment_index": segment_index,
+                    "chunk_index": chunk_index,
+                    "object_type": chunk.object_type,
+                    "object_name": chunk.object_name,
+                    "section": chunk.section,
+                    "summary": chunk.summary,
+                    "raw_text": chunk.raw_text,
+                    "retrieval_text": chunk.retrieval_text,
+                    "table_refs": chunk.table_refs,
+                    "action_types": chunk.action_types,
+                    "params": chunk.params,
+                })
 
     vectors = embed_texts([item["retrieval_text"] for item in all_chunks]) if all_chunks else []
     points = []
@@ -77,6 +81,8 @@ def rebuild_sql_vectorstore(sql_texts: list[dict], knowledge_base_id: str):
                 vector=vector,
                 payload={
                     "source": item["source"],
+                    "segment_index": item["segment_index"],
+                    "chunk_index": item["chunk_index"],
                     "object_type": item["object_type"],
                     "object_name": item["object_name"],
                     "section": item["section"],

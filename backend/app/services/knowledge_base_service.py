@@ -14,9 +14,9 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from backend.app.config import UPLOAD_DIR, VECTORSTORE_DIR
+from backend.app.config import QDRANT_DIR, UPLOAD_DIR
 
-ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt"}
+ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt", ".sql"}
 INVALID_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|]')
 META_FILE_NAME = "kb.meta.json"
 
@@ -141,7 +141,7 @@ def validate_extension(file_name: str) -> str:
 
     suffix = Path(file_name).suffix.lower()
     if suffix not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Only pdf, docx and txt files are supported")
+        raise HTTPException(status_code=400, detail="Only pdf, doc, docx, txt and sql files are supported")
     return suffix
 
 
@@ -244,7 +244,7 @@ def get_kb_file_path(knowledge_base_id: str, file_name: str) -> Path:
 def get_vectorstore_path(knowledge_base_id: str) -> Path:
     """每个知识库对应独立向量索引目录。"""
 
-    return VECTORSTORE_DIR / knowledge_base_id
+    return QDRANT_DIR / knowledge_base_id
 
 
 def update_kb_build_status(knowledge_base_id: str, build_status: str) -> dict:
