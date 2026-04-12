@@ -32,8 +32,7 @@ from backend.app.services.knowledge_base_service import (
     update_kb_build_status,
     validate_extension,
 )
-from backend.app.services.text_splitter_service import split_documents
-from backend.app.services.vector_store_service import build_and_save_vectorstore
+from backend.app.services.vector_store_service import rebuild_sql_vectorstore
 
 router = APIRouter()
 
@@ -163,8 +162,7 @@ def build_knowledge_base(request: BuildKnowledgeBaseRequest):
         if not docs:
             raise HTTPException(status_code=400, detail="All documents are empty")
 
-        split_docs = split_documents(docs)
-        result = build_and_save_vectorstore(split_docs, request.knowledge_base_id)
+        result = rebuild_sql_vectorstore(docs, request.knowledge_base_id)
         update_kb_build_status(request.knowledge_base_id, "已完成")
         sync_kb_build_status(request.knowledge_base_id, "已完成")
         return ApiResponse(success=True, message="Knowledge base built successfully", data=result)

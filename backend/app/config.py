@@ -10,22 +10,23 @@ UPLOAD_DIR = DATA_DIR / "uploads"
 DOCUMENTS_DIR = DATA_DIR / "documents"
 PARSED_DIR = DATA_DIR / "parsed"
 GENERATED_DIR = DATA_DIR / "generated"
-VECTORSTORE_DIR = DATA_DIR / "vectorstore"
+QDRANT_DIR = DATA_DIR / "qdrant"
 
 
 class Settings(BaseSettings):
     """应用运行时配置。"""
 
     app_name: str = "Knowledge Base QA MVP"
-    app_version: str = "0.2.0"
+    app_version: str = "0.3.0"
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     openai_chat_model: str = "gpt-4o-mini"
-    openai_embedding_model: str = "text-embedding-3-small"
     temperature: float = 0.0
     top_k: int = 4
-    chunk_size: int = 800
-    chunk_overlap: int = 100
+    qdrant_url: str = ""
+    qdrant_api_key: str = ""
+    qdrant_path: Path = QDRANT_DIR
+    embedding_model_name: str = "BAAI/bge-small-zh-v1.5"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -36,5 +37,5 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-for path in [DATA_DIR, UPLOAD_DIR, DOCUMENTS_DIR, PARSED_DIR, GENERATED_DIR, VECTORSTORE_DIR]:
+for path in [DATA_DIR, UPLOAD_DIR, DOCUMENTS_DIR, PARSED_DIR, GENERATED_DIR, QDRANT_DIR]:
     path.mkdir(parents=True, exist_ok=True)

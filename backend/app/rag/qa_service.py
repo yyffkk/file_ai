@@ -1,32 +1,31 @@
-"""RAG 问答服务。"""
+"""SQL 知识库问答服务。"""
 
 from backend.app.config import settings
 from backend.app.services.llm_client import invoke_llm
 from backend.app.services.vector_store_service import search_similar_chunks
 
-QA_PROMPT_TEMPLATE = """You are an internal knowledge base assistant.
-Answer strictly based on the provided context.
-If the answer is not available in the context, reply with: Not enough information in the knowledge base.
+QA_PROMPT_TEMPLATE = """你是数据库语义解析助手。
+请基于检索到的 SQL 摘要和原始代码回答问题。
+优先依据 summary 做语义定位，再结合 raw_text 做解释。
+如果上下文不足，请明确说“知识库中没有足够信息”。
 
-Question:
+问题:
 {question}
 
-Context:
+上下文:
 {context}
 
-Return a concise and accurate answer.
+请输出简洁、准确、可解释的答案。
 """
 
 
 def answer_question(knowledge_base_id: str, question: str, top_k: int | None = None) -> dict:
-    """基于指定知识库回答问题。"""
-
     k = top_k or settings.top_k
     results = search_similar_chunks(question, k, knowledge_base_id)
 
     if not results:
         return {
-            "answer": "Not enough information in the knowledge base.",
+            "answer": "知识库中没有足够信息。",
             "sources": [],
             "chunks": [],
             "score": [],
@@ -37,13 +36,19 @@ def answer_question(knowledge_base_id: str, question: str, top_k: int | None = N
     scores = []
     context_parts = []
 
-    for doc, score in results:
-        chunk_text = doc.page_content.strip()
-        source = doc.metadata.get("source", "")
-        chunks.append(chunk_text)
+    for item in results:
+        payload = item.payload or {}
+        raw_text = payload.get("raw_text", "")
+        summary = payload.get("summary", "")
+        source = payload.get("source", "")
+        object_name = payload.get("object_name", "")
+        section = payload.get("section", "")
+        chunks.append(raw_text)
         sources.append(source)
-        scores.append(float(score))
-        context_parts.append(f"Source: {source}\nContent: {chunk_text}")
+        scores.append(float(item.score))
+        context_parts.append(
+            f"对象: {object_name}\n区段: {section}\n摘要: {summary}\n原始代码: {raw_text}"
+        )
 
     prompt = QA_PROMPT_TEMPLATE.format(question=question, context="\n\n".join(context_parts))
     answer = invoke_llm(prompt)
