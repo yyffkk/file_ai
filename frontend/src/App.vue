@@ -41,32 +41,16 @@
 
     <main class="main-content">
       <template v-if="currentPage === 'library'">
-        <header class="hero-panel">
-          <div>
-            <p class="eyebrow">Knowledge Base Workspace</p>
-            <h1>{{ selectedKbName || '我的知识库' }}</h1>
-            <p class="top-desc">
-              聚焦知识库管理、文件沉淀与 RAG 构建状态，界面只保留真正高频的操作。
-            </p>
+        <header class="library-toolbar">
+          <div class="library-toolbar-main">
+            <div class="library-toolbar-label">当前知识库</div>
+            <div class="library-toolbar-title">{{ selectedKbName || '我的知识库' }}</div>
           </div>
-          <div class="hero-side">
-            <div class="hero-side-label">当前构建状态</div>
-            <div class="hero-side-value">{{ selectedKbBuildStatus }}</div>
-          </div>
-        </header>
-
-        <section class="summary-grid summary-grid-compact">
-          <div class="summary-card summary-card-accent">
-            <span>当前知识库</span>
-            <strong>{{ selectedKbName || '未选择' }}</strong>
-            <p>当前工作聚焦的知识库空间</p>
-          </div>
-          <div class="summary-card">
+          <div class="library-toolbar-status">
             <span>构建状态</span>
             <strong>{{ selectedKbBuildStatus }}</strong>
-            <p>用于表示当前 RAG 知识库构建进度</p>
           </div>
-        </section>
+        </header>
 
         <section class="library-main-grid">
           <div class="panel knowledge-column-panel">
@@ -529,3 +513,555 @@ function getErrorMessage(error) {
   return error?.response?.data?.detail || error?.message || '请求失败'
 }
 </script>
+
+<style scoped>
+:global(*) {
+  box-sizing: border-box;
+}
+
+:global(body) {
+  margin: 0;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: linear-gradient(180deg, #f5f8ff 0%, #eef3fb 100%);
+  color: #1b2b4b;
+}
+
+:global(#app) {
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  min-height: 100vh;
+  gap: 24px;
+  padding: 24px;
+}
+
+.sidebar,
+.main-content {
+  min-width: 0;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.brand-card,
+.sidebar-section,
+.panel,
+.library-toolbar {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(131, 156, 214, 0.18);
+  border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(84, 116, 180, 0.12);
+}
+
+.brand-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 28px;
+}
+
+.brand-logo {
+  width: 78px;
+  height: 78px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #1f3363 0%, #263f77 100%);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.brand-title {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.brand-subtitle {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #637ba8;
+}
+
+.sidebar-section {
+  padding: 26px;
+}
+
+.section-head h3 {
+  margin: 0 0 20px;
+  font-size: 18px;
+}
+
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  border-radius: 24px;
+  border: 1px solid transparent;
+  background: #f9fbff;
+  color: #1b2b4b;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-item.active {
+  background: linear-gradient(180deg, #edf3ff 0%, #e6eeff 100%);
+  border-color: #a9c0ff;
+}
+
+.nav-item-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: #e6edff;
+  font-size: 22px;
+}
+
+.nav-item strong {
+  display: block;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.nav-item small {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: #6980a8;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.library-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 28px;
+}
+
+.library-toolbar-label,
+.panel-tag,
+.eyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #3c62d6;
+}
+
+.library-toolbar-title {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.library-toolbar-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #eef4ff 0%, #e8f0ff 100%);
+  color: #59709a;
+  white-space: nowrap;
+}
+
+.library-toolbar-status span {
+  font-size: 14px;
+}
+
+.library-toolbar-status strong {
+  font-size: 18px;
+  color: #1f3363;
+}
+
+.library-main-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.library-content-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.panel {
+  padding: 24px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.panel-header h2 {
+  margin: 8px 0 0;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.knowledge-column-header {
+  align-items: center;
+}
+
+.knowledge-count {
+  font-size: 14px;
+  color: #6f84ab;
+}
+
+.create-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.create-form input,
+.upload-picker,
+.writer-requirement,
+.record-textarea,
+.mini-btn,
+.primary-btn,
+.ghost-btn {
+  font: inherit;
+}
+
+.create-form input,
+.upload-picker,
+.writer-requirement,
+.record-textarea {
+  width: 100%;
+  border: 1px solid #d7e1f6;
+  border-radius: 20px;
+  background: #fff;
+  color: #1b2b4b;
+}
+
+.create-form input {
+  padding: 14px 18px;
+  font-size: 16px;
+}
+
+.primary-btn,
+.ghost-btn,
+.mini-btn {
+  border: none;
+  border-radius: 18px;
+  padding: 14px 22px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.primary-btn {
+  background: linear-gradient(180deg, #7fa0f3 0%, #6d8fe8 100%);
+  color: #fff;
+}
+
+.ghost-btn,
+.mini-btn {
+  background: #edf3ff;
+  color: #1f3363;
+}
+
+.primary-btn:disabled,
+.ghost-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.knowledge-column-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.knowledge-list-item {
+  width: 100%;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid #d5e2ff;
+  background: linear-gradient(180deg, #f6f9ff 0%, #edf3ff 100%);
+  text-align: left;
+  cursor: pointer;
+  color: #1b2b4b;
+}
+
+.knowledge-list-item.active {
+  border-color: #8eafff;
+  box-shadow: 0 14px 30px rgba(84, 116, 180, 0.14);
+}
+
+.knowledge-list-item-top,
+.knowledge-list-item-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.knowledge-list-item-top strong {
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.knowledge-list-item-bottom {
+  margin-top: 18px;
+  color: #6b80a6;
+  font-size: 13px;
+}
+
+.knowledge-list-item-bottom em {
+  font-style: normal;
+  font-weight: 700;
+  color: #3159d3;
+}
+
+.kb-file-badge,
+.preview-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #e6edff;
+  color: #59709a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.upload-bar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.upload-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 72px;
+  padding: 0 22px;
+  overflow: hidden;
+  font-size: 16px;
+  color: #6f84ab;
+}
+
+.upload-picker input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e1e9f8;
+  border-radius: 22px;
+  background: #fff;
+}
+
+.file-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.file-table th,
+.file-table td {
+  padding: 18px 20px;
+  border-bottom: 1px solid #edf1f8;
+  text-align: left;
+}
+
+.file-table th {
+  color: #667ca3;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.file-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.name-cell {
+  max-width: 320px;
+  word-break: break-all;
+}
+
+.table-actions,
+.preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.preview-box {
+  min-height: 360px;
+  border: 1px solid #e1e9f8;
+  border-radius: 22px;
+  background: #fdfefe;
+  padding: 20px;
+}
+
+.preview-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  color: #6f84ab;
+  text-align: center;
+  font-size: 15px;
+}
+
+.preview-empty-icon {
+  font-size: 40px;
+}
+
+.preview-frame {
+  width: 100%;
+  min-height: 720px;
+  border: 1px solid #e1e9f8;
+  border-radius: 22px;
+  background: #fff;
+}
+
+.docx-preview {
+  line-height: 1.75;
+}
+
+.text-preview {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+.empty-block,
+.empty-row,
+.writer-note {
+  color: #6f84ab;
+  font-size: 14px;
+}
+
+.writer-layout,
+.record-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.writer-requirement,
+.record-textarea,
+.writer-output-box {
+  min-height: 360px;
+  padding: 18px;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.writer-output-box,
+.record-guide-list {
+  border: 1px solid #e1e9f8;
+  border-radius: 22px;
+  background: #fff;
+}
+
+.record-guide-list {
+  padding: 6px;
+}
+
+.record-guide-item {
+  padding: 18px;
+  border-radius: 18px;
+}
+
+.record-guide-item + .record-guide-item {
+  margin-top: 10px;
+}
+
+.top-desc,
+.hero-panel,
+.summary-grid,
+.summary-card {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .library-main-grid,
+  .writer-layout,
+  .record-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .brand-card,
+  .sidebar-section,
+  .panel,
+  .library-toolbar {
+    border-radius: 22px;
+  }
+
+  .library-toolbar,
+  .panel-header,
+  .upload-bar,
+  .create-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .library-toolbar-title {
+    font-size: 24px;
+  }
+
+  .brand-title {
+    font-size: 24px;
+  }
+
+  .panel-header h2 {
+    font-size: 22px;
+  }
+}
+</style>
