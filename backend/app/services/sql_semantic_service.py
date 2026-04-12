@@ -31,7 +31,7 @@ SQL_OBJECT_START_PATTERN = re.compile(
     re.I | re.M,
 )
 SQL_FEATURE_PATTERN = re.compile(
-    r"\b(create\s+(?:or\s+alter\s+)?(?:proc(?:edure)?|view|trigger|table)|select\b|insert\b|update\b|delete\b|merge\b|begin\b|end\b|if\b|else\b|case\b|join\b)\b",
+    r"\b(create\s+(?:or\s+alter\s+)?(?:proc(?:edure)?|view|trigger|table)|select\b|insert\b|update\b|delete\b|merge\b|begin\b|end\b|if\b|else\b|case\b|join\b|exists\b|where\b)\b",
     re.I,
 )
 TABLE_REF_PATTERN = re.compile(r"\b(?:from|join|update|into|merge\s+into|delete\s+from)\s+([\[\]\w\.]+)", re.I)
@@ -120,7 +120,7 @@ def split_statement_units(block_text: str, preferred_section: str) -> list[dict]
         starts_new = False
 
         if current and begin_depth == 0 and case_depth == 0:
-            if any(pattern.search(stripped) for _, pattern in STATEMENT_START_PATTERNS if _ != "header"):
+            if any(pattern.search(stripped) for name, pattern in STATEMENT_START_PATTERNS if name != "header"):
                 starts_new = True
             elif upper == "BEGIN":
                 starts_new = True
@@ -221,6 +221,31 @@ def extract_action_types(raw_sql_chunk: str) -> list[str]:
     return [name for name, pattern in ACTION_PATTERNS.items() if pattern.search(raw_sql_chunk)]
 
 
+def extract_conditions(raw_sql_chunk: str) -> list[str]:
+    conditions = []
+    for pattern in [r"\bif\b(.+?)(?:\bbegin\b|\bthen\b|$)", r"\bwhere\b(.+?)(?:\bgroup\b|\border\b|;|$)", r"\bexists\s*\((.+?)\)"]:
+        for match in re.finditer(pattern, raw_sql_chunk, re.I | re.S):
+            text = re.sub(r"\s+", " ", match.group(1)).strip(" ()\n\t")
+            if text:
+                conditions.append(text[:160])
+    return conditions[:3]
+
+
+def extract_business_targets(raw_sql_chunk: str, params: list[str]) -> list[str]:
+    targets = []
+    for pattern in [r"set\s+(@\w+)\s*=", r"into\s+([\[\]\w\.]+)", r"update\s+([\[\]\w\.]+)"]:
+        for match in re.finditer(pattern, raw_sql_chunk, re.I):
+            target = match.group(1).strip().strip("[]")
+            if target:
+                targets.append(target)
+    targets.extend(params[:2])
+    deduped = []
+    for item in targets:
+        if item not in deduped:
+            deduped.append(item)
+    return deduped[:4]
+
+
 def has_condition(raw_sql_chunk: str) -> bool:
     return bool(re.search(r"\bif\b|\belse\b|\bcase\b|\bwhen\b|\bexists\b|\bwhere\b", raw_sql_chunk, re.I))
 
@@ -249,21 +274,23 @@ def build_summary(
     action_types: list[str],
     params: list[str],
 ) -> str:
-    condition_text = "包含条件判断" if has_condition(raw_sql_chunk) else "不包含明显条件判断"
-    return_text = "涉及返回结果" if has_return(raw_sql_chunk) else "未直接体现返回结果"
+    condition_text = "；条件包括：" + "；".join(extract_conditions(raw_sql_chunk)) if has_condition(raw_sql_chunk) and extract_conditions(raw_sql_chunk) else "；未识别到明确条件表达式"
+    return_text = "；该区段涉及返回结果或输出参数" if has_return(raw_sql_chunk) else "；该区段未直接输出返回结果"
     tables_text = "、".join(table_refs) if table_refs else "未识别到具体表"
     actions_text = "、".join(action_types) if action_types else "无明确数据操作"
-    params_text = f"参数包括 {'、'.join(params)}。" if params else "未识别到参数。"
+    params_text = f"参数包括 {'、'.join(params)}" if params else "未识别到参数"
+    targets = extract_business_targets(raw_sql_chunk, params)
+    target_text = f"，核心影响对象为 {'、'.join(targets)}" if targets else ""
 
     return (
         f"该代码块属于{object_type} {object_name}，"
         f"当前区段为{section}。"
-        f"该逻辑主要用于{describe_section(section)}，"
-        f"涉及表 {tables_text}，"
-        f"包含 {actions_text} 操作，"
-        f"{condition_text}，"
+        f"该区段主要用于{describe_section(section)}，"
+        f"围绕 {tables_text} 处理业务逻辑，"
+        f"执行 {actions_text} 操作，"
+        f"{params_text}{target_text}"
+        f"{condition_text}"
         f"{return_text}。"
-        f"{params_text}"
     )
 
 
