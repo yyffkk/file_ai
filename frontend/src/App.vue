@@ -41,18 +41,7 @@
 
     <main class="main-content">
       <template v-if="currentPage === 'library'">
-        <header class="library-toolbar">
-          <div class="library-toolbar-main">
-            <div class="library-toolbar-label">当前知识库</div>
-            <div class="library-toolbar-title">{{ selectedKbName || '我的知识库' }}</div>
-          </div>
-          <div class="library-toolbar-status">
-            <span>构建状态</span>
-            <strong>{{ selectedKbBuildStatus }}</strong>
-          </div>
-        </header>
-
-        <section class="library-main-grid layout-kb-dominant">
+        <section class="library-main-grid layout-kb-compact">
           <div class="panel knowledge-column-panel knowledge-column-panel-dominant">
             <div class="panel-header knowledge-column-header">
               <div>
@@ -102,6 +91,17 @@
           </div>
 
           <div class="library-content-column">
+            <header class="library-toolbar inline-library-toolbar">
+              <div class="library-toolbar-main">
+                <div class="library-toolbar-label">当前知识库</div>
+                <div class="library-toolbar-title">{{ selectedKbName || '我的知识库' }}</div>
+              </div>
+              <div class="library-toolbar-status">
+                <span>构建状态</span>
+                <strong>{{ selectedKbBuildStatus }}</strong>
+              </div>
+            </header>
+
             <div class="panel file-panel">
               <div class="panel-header panel-header-stack-mobile">
                 <div>
@@ -661,6 +661,62 @@ function getErrorMessage(error) {
   padding: 20px 28px;
 }
 
+.inline-library-toolbar {
+  margin-bottom: 0;
+}
+
+.layout-kb-compact {
+  grid-template-columns: 340px minmax(0, 1fr);
+}
+
+.layout-kb-compact .knowledge-column-panel {
+  min-height: calc(100vh - 48px);
+}
+
+.layout-kb-compact .knowledge-column-list {
+  gap: 10px;
+}
+
+.layout-kb-compact .knowledge-list-item {
+  padding: 14px 16px;
+}
+
+.layout-kb-compact .knowledge-list-item-top strong {
+  font-size: 16px;
+}
+
+.layout-kb-compact .knowledge-list-item-bottom {
+  margin-top: 12px;
+}
+
+.layout-kb-compact .panel-header h2 {
+  font-size: 22px;
+}
+
+.layout-kb-compact .create-form input {
+  font-size: 15px;
+}
+
+.layout-kb-compact .primary-btn {
+  padding: 12px 18px;
+}
+
+.layout-kb-compact .library-content-column {
+  gap: 16px;
+}
+
+.layout-kb-compact .library-toolbar-title {
+  font-size: 24px;
+}
+
+.layout-kb-compact .library-toolbar-status {
+  padding: 12px 16px;
+}
+
+.layout-kb-compact .library-toolbar-status strong {
+  font-size: 16px;
+}
+
 .library-toolbar-label,
 .panel-tag,
 .eyebrow {
@@ -700,13 +756,9 @@ function getErrorMessage(error) {
 
 .library-main-grid {
   display: grid;
-  grid-template-columns: minmax(420px, 520px) minmax(0, 1fr);
+  grid-template-columns: 340px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
-}
-
-.layout-kb-dominant {
-  grid-template-columns: minmax(460px, 560px) minmax(0, 1fr);
 }
 
 .library-content-column {
@@ -804,34 +856,21 @@ function getErrorMessage(error) {
   cursor: not-allowed;
 }
 
-.knowledge-column-panel-dominant {
-  min-height: calc(100vh - 180px);
-}
-
 .knowledge-column-list {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.knowledge-column-list-dominant {
-  gap: 12px;
-}
-
 .knowledge-list-item {
   width: 100%;
-  padding: 18px;
-  border-radius: 22px;
+  padding: 14px 16px;
+  border-radius: 20px;
   border: 1px solid #d5e2ff;
-  background: linear-gradient(180deg, #f6f9ff 0%, #edf3ff 100%);
+  background: #f7faff;
   text-align: left;
   cursor: pointer;
   color: #1b2b4b;
-}
-
-.knowledge-list-item-dominant {
-  padding: 16px 18px;
-  background: #f7faff;
 }
 
 .knowledge-list-item.active {
