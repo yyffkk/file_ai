@@ -8,7 +8,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, PointStruct, VectorParams
 
 from backend.app.config import settings
-from backend.app.services.embedding_service import embed_query, embed_texts, get_embedding_model
+from backend.app.services.embedding_service import embed_query, embed_texts
 from backend.app.services.sql_semantic_service import extract_sql_segments, parse_sql_chunks
 
 _client: QdrantClient | None = None
@@ -39,6 +39,57 @@ def ensure_collection(collection_name: str) -> None:
 
 def build_collection_name(knowledge_base_id: str) -> str:
     return f"sql_kb_{knowledge_base_id.replace('-', '_')}"
+
+
+def preview_sql_chunks(sql_texts: list[dict], knowledge_base_id: str) -> dict:
+    preview_items = []
+    total_segments = 0
+    total_chunks = 0
+
+    for item in sql_texts:
+        file_name = item["source"]
+        segments = extract_sql_segments(item["text"])
+        file_preview = {
+            "source": file_name,
+            "segment_count": len(segments),
+            "segments": [],
+        }
+        total_segments += len(segments)
+
+        for segment_index, segment in enumerate(segments):
+            chunks = parse_sql_chunks(segment)
+            total_chunks += len(chunks)
+            segment_preview = {
+                "segment_index": segment_index,
+                "object_type": chunks[0].object_type if chunks else "SQL对象",
+                "object_name": chunks[0].object_name if chunks else "unknown_object",
+                "chunk_count": len(chunks),
+                "raw_sql": segment,
+                "chunks": [
+                    {
+                        "chunk_index": chunk_index,
+                        "section": chunk.section,
+                        "summary": chunk.summary,
+                        "table_refs": chunk.table_refs,
+                        "action_types": chunk.action_types,
+                        "params": chunk.params,
+                        "raw_text": chunk.raw_text,
+                        "retrieval_text": chunk.retrieval_text,
+                    }
+                    for chunk_index, chunk in enumerate(chunks)
+                ],
+            }
+            file_preview["segments"].append(segment_preview)
+
+        preview_items.append(file_preview)
+
+    return {
+        "knowledge_base_id": knowledge_base_id,
+        "file_count": len(preview_items),
+        "segment_count": total_segments,
+        "chunk_count": total_chunks,
+        "files": preview_items,
+    }
 
 
 def rebuild_sql_vectorstore(sql_texts: list[dict], knowledge_base_id: str):

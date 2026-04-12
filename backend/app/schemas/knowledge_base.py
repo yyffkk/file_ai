@@ -10,14 +10,17 @@ class CreateKnowledgeBaseRequest(BaseModel):
 
 
 class BuildKnowledgeBaseRequest(BaseModel):
-    """构建向量库时的入参。
-
-    - knowledge_base_id: 指定要构建的知识库。
-    - file_names: 可选，仅重建部分文件；为空时默认重建该知识库下全部文件。
-    """
+    """构建向量库时的入参。"""
 
     knowledge_base_id: str = Field(..., description="Knowledge base identifier")
     file_names: list[str] | None = Field(default=None, description="File names to build into the knowledge base")
+
+
+class PreviewKnowledgeBaseRequest(BaseModel):
+    """预览 SQL 识别与切块结果。"""
+
+    knowledge_base_id: str = Field(..., description="Knowledge base identifier")
+    file_names: list[str] | None = Field(default=None, description="Optional file names to preview")
 
 
 class AskRequest(BaseModel):

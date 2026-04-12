@@ -18,7 +18,12 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from backend.app.loaders.document_loader import load_document_text
 from backend.app.rag.qa_service import answer_question
 from backend.app.schemas.common import ApiResponse
-from backend.app.schemas.knowledge_base import AskRequest, BuildKnowledgeBaseRequest, CreateKnowledgeBaseRequest
+from backend.app.schemas.knowledge_base import (
+    AskRequest,
+    BuildKnowledgeBaseRequest,
+    CreateKnowledgeBaseRequest,
+    PreviewKnowledgeBaseRequest,
+)
 from backend.app.services.document_center_service import sync_kb_build_status
 from backend.app.services.knowledge_base_service import (
     create_knowledge_base,
@@ -32,7 +37,7 @@ from backend.app.services.knowledge_base_service import (
     update_kb_build_status,
     validate_extension,
 )
-from backend.app.services.vector_store_service import rebuild_sql_vectorstore
+from backend.app.services.vector_store_service import preview_sql_chunks, rebuild_sql_vectorstore
 
 router = APIRouter()
 
@@ -127,6 +132,37 @@ def download_document(knowledge_base_id: str, file_name: str):
 
     path = get_kb_file_path(knowledge_base_id, file_name)
     return FileResponse(path=str(path), filename=path.name)
+
+
+@router.post("/preview", response_model=ApiResponse)
+def preview_knowledge_base(request: PreviewKnowledgeBaseRequest):
+    """预览 SQL 对象识别、逻辑切块与摘要结果。"""
+
+    file_paths = []
+    if request.file_names:
+        for name in request.file_names:
+            safe_name = ensure_safe_filename(name)
+            file_paths.append(get_kb_file_path(request.knowledge_base_id, safe_name))
+    else:
+        file_paths = [
+            get_kb_file_path(request.knowledge_base_id, item["name"])
+            for item in list_kb_files(request.knowledge_base_id)
+        ]
+
+    if not file_paths:
+        raise HTTPException(status_code=400, detail="No files available to preview")
+
+    docs = []
+    for path in file_paths:
+        text = load_document_text(path)
+        if text.strip():
+            docs.append({"text": text, "source": path.name})
+
+    if not docs:
+        raise HTTPException(status_code=400, detail="All documents are empty")
+
+    result = preview_sql_chunks(docs, request.knowledge_base_id)
+    return ApiResponse(success=True, message="Knowledge base preview generated successfully", data=result)
 
 
 @router.post("/build", response_model=ApiResponse)
