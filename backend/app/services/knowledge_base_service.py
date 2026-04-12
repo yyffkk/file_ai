@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
@@ -254,3 +255,27 @@ def update_kb_build_status(knowledge_base_id: str, build_status: str) -> dict:
     meta["build_status"] = build_status
     write_kb_meta(kb_dir, meta)
     return meta
+
+
+def delete_knowledge_base(knowledge_base_id: str) -> dict:
+    """删除知识库，同时删除文件目录和对应向量索引目录。"""
+
+    kb_dir = ensure_kb_exists(knowledge_base_id)
+    meta = read_kb_meta(kb_dir)
+    vectorstore_path = get_vectorstore_path(knowledge_base_id)
+
+    if kb_dir.exists():
+        shutil.rmtree(kb_dir)
+
+    vectorstore_deleted = False
+    if vectorstore_path.exists():
+        shutil.rmtree(vectorstore_path)
+        vectorstore_deleted = True
+
+    return {
+        "id": meta.get("id", knowledge_base_id),
+        "name": meta.get("name", knowledge_base_id),
+        "deleted_upload_dir": str(kb_dir),
+        "deleted_vectorstore_dir": str(vectorstore_path) if vectorstore_deleted else None,
+        "vectorstore_deleted": vectorstore_deleted,
+    }

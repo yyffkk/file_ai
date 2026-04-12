@@ -22,6 +22,7 @@ from backend.app.schemas.knowledge_base import AskRequest, BuildKnowledgeBaseReq
 from backend.app.services.document_center_service import sync_kb_build_status
 from backend.app.services.knowledge_base_service import (
     create_knowledge_base,
+    delete_knowledge_base,
     ensure_kb_exists,
     ensure_safe_filename,
     get_kb_file_path,
@@ -58,6 +59,14 @@ def migrate_legacy_kbs():
 
     data = migrate_legacy_knowledge_bases()
     return ApiResponse(success=True, message="Legacy knowledge bases migrated successfully", data=data)
+
+
+@router.delete("/{knowledge_base_id}", response_model=ApiResponse)
+def remove_kb(knowledge_base_id: str):
+    """删除指定知识库及其向量索引。"""
+
+    data = delete_knowledge_base(knowledge_base_id)
+    return ApiResponse(success=True, message="Knowledge base deleted successfully", data=data)
 
 
 @router.get("/{knowledge_base_id}/files", response_model=ApiResponse)

@@ -48,7 +48,17 @@
                 <p class="panel-tag">Knowledge Bases</p>
                 <h2>我的知识库</h2>
               </div>
-              <span class="knowledge-count">共 {{ knowledgeBases.length }} 个</span>
+              <div class="knowledge-header-actions">
+                <span class="knowledge-count">共 {{ knowledgeBases.length }} 个</span>
+                <button
+                  v-if="selectedKnowledgeBaseId"
+                  class="danger-btn"
+                  :disabled="loading.deleteKb"
+                  @click="removeKnowledgeBase"
+                >
+                  {{ loading.deleteKb ? '删除中...' : '删除知识库' }}
+                </button>
+              </div>
             </div>
 
             <div class="create-form knowledge-create-form">
@@ -331,7 +341,8 @@ const loading = ref({
   kbList: false,
   kbFiles: false,
   documentUpload: false,
-  kbBuild: false
+  kbBuild: false,
+  deleteKb: false
 })
 
 const selectedKbName = computed(() => knowledgeBases.value.find(item => item.id === selectedKnowledgeBaseId.value)?.name || '')
@@ -446,6 +457,36 @@ async function buildKnowledgeBase() {
     window.alert(getErrorMessage(error))
   } finally {
     loading.value.kbBuild = false
+  }
+}
+
+async function removeKnowledgeBase() {
+  if (!selectedKnowledgeBaseId.value) return
+
+  const confirmDelete = window.confirm(`确定删除知识库“${selectedKbName.value || selectedKnowledgeBaseId.value}”吗？\n\n这会同时删除：\n1. 知识库下已上传的全部文件\n2. 该知识库对应的向量数据库索引\n\n此操作不可恢复。`)
+  if (!confirmDelete) return
+
+  try {
+    loading.value.deleteKb = true
+    const deletingId = selectedKnowledgeBaseId.value
+    await api.delete(`/api/kb/${encodeURIComponent(deletingId)}`)
+
+    previewFileInfo.value = null
+    previewHtml.value = ''
+    previewText.value = ''
+    kbFiles.value = []
+    documentFile.value = null
+
+    await fetchKnowledgeBases()
+    selectedKnowledgeBaseId.value = knowledgeBases.value[0]?.id || ''
+
+    if (selectedKnowledgeBaseId.value) {
+      await fetchKbFiles(selectedKnowledgeBaseId.value)
+    }
+  } catch (error) {
+    window.alert(getErrorMessage(error))
+  } finally {
+    loading.value.deleteKb = false
   }
 }
 
@@ -790,6 +831,12 @@ function getErrorMessage(error) {
   align-items: center;
 }
 
+.knowledge-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .knowledge-count {
   font-size: 14px;
   color: #6f84ab;
@@ -829,7 +876,8 @@ function getErrorMessage(error) {
 
 .primary-btn,
 .ghost-btn,
-.mini-btn {
+.mini-btn,
+.danger-btn {
   border: none;
   border-radius: 18px;
   padding: 14px 22px;
@@ -850,8 +898,14 @@ function getErrorMessage(error) {
   color: #1f3363;
 }
 
+.danger-btn {
+  background: #ffe9ea;
+  color: #c53a4d;
+}
+
 .primary-btn:disabled,
-.ghost-btn:disabled {
+.ghost-btn:disabled,
+.danger-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -1102,7 +1156,8 @@ function getErrorMessage(error) {
   .library-toolbar,
   .panel-header,
   .upload-bar,
-  .create-form {
+  .create-form,
+  .knowledge-header-actions {
     flex-direction: column;
     align-items: stretch;
   }
