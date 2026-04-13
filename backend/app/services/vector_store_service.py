@@ -28,9 +28,11 @@ def get_qdrant_client() -> QdrantClient:
     return _client
 
 
+
 def build_vector_config() -> VectorParams:
     vector_size = len(embed_query("test query", channel=EmbeddingChannels.RETRIEVAL))
     return VectorParams(size=vector_size, distance=Distance.COSINE)
+
 
 
 def ensure_collection(collection_name: str) -> None:
@@ -45,8 +47,10 @@ def ensure_collection(collection_name: str) -> None:
     )
 
 
+
 def build_collection_name(knowledge_base_id: str) -> str:
     return f"sql_kb_{knowledge_base_id.replace('-', '_')}"
+
 
 
 def build_chunk_record(file_name: str, segment_index: int, chunk_index: int, chunk) -> dict:
@@ -57,7 +61,8 @@ def build_chunk_record(file_name: str, segment_index: int, chunk_index: int, chu
         "object_type": chunk.object_type,
         "object_name": chunk.object_name,
         "section": chunk.section,
-        "summary": chunk.summary,
+        "tech_summary": chunk.tech_summary,
+        "business_summary": chunk.business_summary,
         "raw_text": chunk.raw_text,
         "retrieval_text": chunk.retrieval_text,
         "table_refs": chunk.table_refs,
@@ -66,6 +71,7 @@ def build_chunk_record(file_name: str, segment_index: int, chunk_index: int, chu
         "vector_channel": RETRIEVAL_VECTOR_FIELD,
         "future_vector_channels": FUTURE_VECTOR_FIELDS,
     }
+
 
 
 def collect_sql_chunk_records(sql_texts: list[dict]) -> list[dict]:
@@ -78,6 +84,7 @@ def collect_sql_chunk_records(sql_texts: list[dict]) -> list[dict]:
             for chunk_index, chunk in enumerate(chunks):
                 all_chunks.append(build_chunk_record(file_name, segment_index, chunk_index, chunk))
     return all_chunks
+
 
 
 def preview_sql_chunks(sql_texts: list[dict], knowledge_base_id: str) -> dict:
@@ -108,7 +115,8 @@ def preview_sql_chunks(sql_texts: list[dict], knowledge_base_id: str) -> dict:
                     {
                         "chunk_index": chunk_index,
                         "section": chunk.section,
-                        "summary": chunk.summary,
+                        "tech_summary": chunk.tech_summary,
+                        "business_summary": chunk.business_summary,
                         "table_refs": chunk.table_refs,
                         "action_types": chunk.action_types,
                         "params": chunk.params,
@@ -133,6 +141,7 @@ def preview_sql_chunks(sql_texts: list[dict], knowledge_base_id: str) -> dict:
         },
         "files": preview_items,
     }
+
 
 
 def rebuild_sql_vectorstore(sql_texts: list[dict], knowledge_base_id: str):
@@ -181,6 +190,7 @@ def rebuild_sql_vectorstore(sql_texts: list[dict], knowledge_base_id: str):
     }
 
 
+
 def build_search_filter(object_type: str | None = None, object_name: str | None = None, table_refs: list[str] | None = None):
     conditions = []
     if object_type:
@@ -190,6 +200,7 @@ def build_search_filter(object_type: str | None = None, object_name: str | None 
     if table_refs:
         conditions.append(FieldCondition(key="table_refs", match=MatchAny(any=table_refs)))
     return Filter(must=conditions) if conditions else None
+
 
 
 def search_similar_chunks(

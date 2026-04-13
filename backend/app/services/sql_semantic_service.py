@@ -6,7 +6,6 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass
-from pathlib import Path
 
 from backend.app.config import GENERATED_DIR, settings
 from backend.app.services.llm_client import invoke_llm
@@ -17,7 +16,8 @@ class SQLChunk:
     object_type: str
     object_name: str
     section: str
-    summary: str
+    tech_summary: str
+    business_summary: str
     raw_text: str
     retrieval_text: str
     table_refs: list[str]
@@ -57,16 +57,30 @@ STATEMENT_START_PATTERNS = [
     ("header", re.compile(r"^\s*(create\b|alter\b|as\b|declare\b|set\b|begin\b|@\w+)", re.I)),
 ]
 
-SUMMARY_PROMPT_TEMPLATE = """你是 SQL 业务语义摘要器。
-请基于给定 SQL 代码块，生成一个自然语言 summary，用于后续数据库语义检索。
+SUMMARY_PROMPT_TEMPLATE = """你现在是一个“吊挂系统现场问题诊断专家 + 数据库语义分析专家 + RAG系统执行代理”。
 
-必须遵守：
-1. 必须明确说明这是哪种对象（存储过程/视图/触发器/表）以及对象名。
-2. 必须说明当前区段类型（header/query/branch_logic/write_logic/return_logic）。
-3. 必须描述这段 SQL 在业务上具体做了什么，不能空泛，不能只说“包含查询逻辑”。
-4. 尽量说清楚根据什么条件判断什么业务结果，或者对哪些数据做了什么处理。
-5. 必须提及涉及表、操作类型、参数、是否包含条件判断、是否涉及返回结果。
-6. 输出只要一段自然语言，不要 JSON，不要分点。
+你的任务是对一个 SQL 对象区段生成两类摘要，供后续数据库语义检索与现场问题诊断使用。
+
+必须严格遵守：
+1. 必须输出 JSON，且只能输出 JSON，不要解释。
+2. JSON 结构必须为：
+{
+  "tech_summary": "...",
+  "business_summary": "..."
+}
+3. tech_summary 必须包含：
+   - 涉及表
+   - SQL操作类型（SELECT/UPDATE/INSERT/DELETE/MERGE）
+   - 条件逻辑
+   - 返回参数或输出结果
+4. business_summary 必须包含：
+   - 该 SQL 在吊挂业务中的作用
+   - 对应现场动作（如：出衣架、放行、扫码、工站过站、产线流转、主机联动、状态回传）
+   - 失败时现场会看到什么现象
+   - 使用业务词汇，如：工站、产线、主机、衣架、扫码、放行、初始化、绑定、过站
+5. 禁止空泛描述，例如“处理数据”“执行查询”。
+6. 如果区段信息不足，也必须明确写出“当前区段未体现xxx”，不能省略关键项。
+7. 回答重点是给后续 RAG 检索和现场排障用，不是做学术解释。
 
 输入信息：
 对象类型: {object_type}
@@ -93,8 +107,10 @@ def load_summary_cache() -> dict:
         return {}
 
 
+
 def save_summary_cache(cache: dict) -> None:
     SUMMARY_CACHE_FILE.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 
 def build_summary_cache_key(
@@ -121,8 +137,10 @@ def build_summary_cache_key(
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
+
 def normalize_object_name(name: str) -> str:
     return name.strip().strip("[]")
+
 
 
 def detect_object(sql_text: str) -> tuple[str, str]:
@@ -131,6 +149,7 @@ def detect_object(sql_text: str) -> tuple[str, str]:
         if match:
             return object_type, normalize_object_name(match.group(1))
     return "SQL对象", "unknown_object"
+
 
 
 def is_likely_sql(text: str) -> bool:
@@ -142,6 +161,7 @@ def is_likely_sql(text: str) -> bool:
         score += 5
     score += len(SQL_FEATURE_PATTERN.findall(text))
     return score >= 4
+
 
 
 def extract_sql_segments(text: str) -> list[str]:
@@ -162,8 +182,10 @@ def extract_sql_segments(text: str) -> list[str]:
     return []
 
 
+
 def split_sql_lines(sql_text: str) -> list[str]:
     return [line.rstrip() for line in sql_text.splitlines() if line.strip()]
+
 
 
 def classify_statement(statement: str, fallback: str = "query") -> str:
@@ -171,6 +193,7 @@ def classify_statement(statement: str, fallback: str = "query") -> str:
         if pattern.search(statement):
             return section
     return fallback
+
 
 
 def split_statement_units(block_text: str, preferred_section: str) -> list[dict]:
@@ -225,6 +248,7 @@ def split_statement_units(block_text: str, preferred_section: str) -> list[dict]
     return final_units
 
 
+
 def chunk_sql_by_logic(sql_text: str) -> tuple[str, str, list[dict]]:
     object_type, object_name = detect_object(sql_text)
     lines = split_sql_lines(sql_text)
@@ -277,28 +301,34 @@ def chunk_sql_by_logic(sql_text: str) -> tuple[str, str, list[dict]]:
     return object_type, object_name, refined_chunks
 
 
+
 def extract_table_refs(raw_sql_chunk: str) -> list[str]:
     refs = {item.strip().strip("[]") for item in TABLE_REF_PATTERN.findall(raw_sql_chunk)}
     return sorted(refs)
+
 
 
 def extract_params(raw_sql_chunk: str) -> list[str]:
     return sorted(set(PARAM_PATTERN.findall(raw_sql_chunk)))
 
 
+
 def extract_action_types(raw_sql_chunk: str) -> list[str]:
     return [name for name, pattern in ACTION_PATTERNS.items() if pattern.search(raw_sql_chunk)]
+
 
 
 def has_condition(raw_sql_chunk: str) -> bool:
     return bool(re.search(r"\bif\b|\belse\b|\bcase\b|\bwhen\b|\bexists\b|\bwhere\b", raw_sql_chunk, re.I))
 
 
+
 def has_return(raw_sql_chunk: str) -> bool:
     return bool(re.search(r"\breturn\b|\boutput\b|\bselect\s+@|\bset\s+@", raw_sql_chunk, re.I))
 
 
-def build_rule_based_summary(
+
+def build_rule_based_summaries(
     object_type: str,
     object_name: str,
     section: str,
@@ -306,19 +336,50 @@ def build_rule_based_summary(
     action_types: list[str],
     params: list[str],
     raw_sql_chunk: str,
-) -> str:
-    tables_text = "、".join(table_refs) if table_refs else "未识别到具体表"
-    actions_text = "、".join(action_types) if action_types else "无明确数据操作"
-    params_text = f"参数包括 {'、'.join(params)}" if params else "未识别到参数"
-    condition_text = "包含条件判断" if has_condition(raw_sql_chunk) else "不包含明显条件判断"
-    return_text = "涉及返回结果" if has_return(raw_sql_chunk) else "未直接体现返回结果"
-    return (
-        f"该代码块属于{object_type} {object_name}，当前区段为{section}。"
-        f"该区段围绕 {tables_text} 执行业务逻辑，包含 {actions_text} 操作，{params_text}，{condition_text}，{return_text}。"
+) -> tuple[str, str]:
+    tables_text = "、".join(table_refs) if table_refs else "当前区段未识别到具体表"
+    actions_text = "、".join(action_types) if action_types else "当前区段未识别到明确增删改查动作"
+    params_text = "、".join(params) if params else "当前区段未识别到参数"
+    condition_text = "包含条件判断" if has_condition(raw_sql_chunk) else "当前区段未体现明显条件判断"
+    return_text = "包含返回参数或结果控制" if has_return(raw_sql_chunk) else "当前区段未体现明确返回参数或输出结果"
+
+    tech_summary = (
+        f"{object_type}{object_name}的{section}区段，涉及表：{tables_text}；"
+        f"操作类型：{actions_text}；参数：{params_text}；{condition_text}；{return_text}。"
     )
 
+    business_summary = (
+        f"该区段属于吊挂业务相关数据库对象 {object_name} 的 {section} 逻辑。"
+        f"从代码表象看，它用于支撑工站、产线、主机、衣架流转、扫码放行或状态判断中的某一环节。"
+        f"如果这里条件不成立、数据未初始化、绑定关系错误或返回结果异常，现场可能出现扫码后无反应、工站不放行、衣架不流转、主机不联动、状态不回传等现象。"
+        f"当前区段的业务信息有限，后续排障应结合表 {tables_text}、参数 {params_text} 和返回结果继续核对。"
+    )
 
-def build_summary(
+    return tech_summary, business_summary
+
+
+
+def parse_summary_response(content: str) -> tuple[str, str] | None:
+    try:
+        data = json.loads(content)
+    except Exception:
+        match = re.search(r"\{.*\}", content, re.S)
+        if not match:
+            return None
+        try:
+            data = json.loads(match.group(0))
+        except Exception:
+            return None
+
+    tech_summary = str(data.get("tech_summary", "")).strip()
+    business_summary = str(data.get("business_summary", "")).strip()
+    if not tech_summary or not business_summary:
+        return None
+    return re.sub(r"\s+", " ", tech_summary), re.sub(r"\s+", " ", business_summary)
+
+
+
+def build_summaries(
     object_type: str,
     object_name: str,
     section: str,
@@ -326,7 +387,7 @@ def build_summary(
     table_refs: list[str],
     action_types: list[str],
     params: list[str],
-) -> str:
+) -> tuple[str, str]:
     cache_key = build_summary_cache_key(
         object_type=object_type,
         object_name=object_name,
@@ -338,8 +399,13 @@ def build_summary(
     )
     cache = load_summary_cache()
     cached_summary = cache.get(cache_key)
-    if cached_summary:
-        return cached_summary
+    if isinstance(cached_summary, dict):
+        tech_summary = str(cached_summary.get("tech_summary", "")).strip()
+        business_summary = str(cached_summary.get("business_summary", "")).strip()
+        if tech_summary and business_summary:
+            return tech_summary, business_summary
+
+    summaries: tuple[str, str] | None = None
 
     prompt = SUMMARY_PROMPT_TEMPLATE.format(
         object_type=object_type,
@@ -353,17 +419,15 @@ def build_summary(
         raw_sql_chunk=raw_sql_chunk,
     )
 
-    summary = ""
     if settings.sql_summary_use_llm:
         try:
-            summary = invoke_llm(prompt).strip()
-            if summary:
-                summary = re.sub(r"\s+", " ", summary)
+            llm_response = invoke_llm(prompt).strip()
+            summaries = parse_summary_response(llm_response)
         except Exception:
-            summary = ""
+            summaries = None
 
-    if not summary:
-        summary = build_rule_based_summary(
+    if not summaries:
+        summaries = build_rule_based_summaries(
             object_type=object_type,
             object_name=object_name,
             section=section,
@@ -373,16 +437,21 @@ def build_summary(
             raw_sql_chunk=raw_sql_chunk,
         )
 
-    cache[cache_key] = summary
+    cache[cache_key] = {
+        "tech_summary": summaries[0],
+        "business_summary": summaries[1],
+    }
     save_summary_cache(cache)
-    return summary
+    return summaries
+
 
 
 def build_retrieval_text(
     object_type: str,
     object_name: str,
     section: str,
-    summary: str,
+    tech_summary: str,
+    business_summary: str,
     table_refs: list[str],
     action_types: list[str],
     params: list[str],
@@ -392,12 +461,14 @@ def build_retrieval_text(
         f"对象类型: {object_type}\n"
         f"对象名称: {object_name}\n"
         f"区段: {section}\n\n"
-        f"摘要:\n{summary}\n\n"
+        f"技术摘要:\n{tech_summary}\n\n"
+        f"业务摘要:\n{business_summary}\n\n"
         f"涉及表:\n{', '.join(table_refs) if table_refs else '无'}\n\n"
         f"操作类型:\n{', '.join(action_types) if action_types else '无'}\n\n"
         f"参数:\n{', '.join(params) if params else '无'}\n\n"
         f"原始代码:\n{raw_sql_chunk}"
     )
+
 
 
 def parse_sql_chunks(sql_text: str) -> list[SQLChunk]:
@@ -411,12 +482,21 @@ def parse_sql_chunks(sql_text: str) -> list[SQLChunk]:
         table_refs = extract_table_refs(raw_text)
         action_types = extract_action_types(raw_text)
         params = extract_params(raw_text)
-        summary = build_summary(object_type, object_name, chunk["section"], raw_text, table_refs, action_types, params)
+        tech_summary, business_summary = build_summaries(
+            object_type,
+            object_name,
+            chunk["section"],
+            raw_text,
+            table_refs,
+            action_types,
+            params,
+        )
         retrieval_text = build_retrieval_text(
             object_type=object_type,
             object_name=object_name,
             section=chunk["section"],
-            summary=summary,
+            tech_summary=tech_summary,
+            business_summary=business_summary,
             table_refs=table_refs,
             action_types=action_types,
             params=params,
@@ -427,7 +507,8 @@ def parse_sql_chunks(sql_text: str) -> list[SQLChunk]:
                 object_type=object_type,
                 object_name=object_name,
                 section=chunk["section"],
-                summary=summary,
+                tech_summary=tech_summary,
+                business_summary=business_summary,
                 raw_text=raw_text,
                 retrieval_text=retrieval_text,
                 table_refs=table_refs,
